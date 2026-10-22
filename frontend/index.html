@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Форум «Диагностика кармы. Взгляд изнутри»" />
+    <title>Диагностика кармы. Взгляд изнутри</title>
+    <link
+      rel="icon"
+      href="./src/assets/icons/logo.jpg"
+      type="image/jpeg"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="./src/assets/icons/logo.jpg"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./src/styles/main.css?v=20261022-logo" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="site-header">
+        <div class="container header__row">
+          <a class="brand" href="#/" aria-label="На главную">
+            <span class="brand__mark" aria-hidden="true">
+              <img
+                src="./src/assets/icons/logo.jpg"
+                alt=""
+                width="39"
+                height="39"
+              >
+            </span>
+            <span><strong>Диагностика кармы</strong><small>Взгляд изнутри</small></span>
+          </a>
+          <nav class="main-nav" aria-label="Основная навигация">
+            <a href="#/" data-nav>Форум</a>
+            <a href="#/active" data-nav>Активные темы</a>
+            <a href="#/participated" data-nav data-auth-only hidden>
+              С вашим участием
+            </a>
+            <a href="#/chats" data-nav data-auth-only hidden class="nav-chats">
+              Чаты
+              <span
+                class="header-badge header-badge--chats"
+                data-chats-badge
+                hidden
+              >0</span>
+            </a>
+          </nav>
+          <div class="header__actions">
+            <div class="header-notify" data-auth-only hidden>
+              <button
+                class="icon-button notify-toggle"
+                type="button"
+                aria-label="Уведомления"
+                aria-expanded="false"
+                data-notify-toggle
+                title="Уведомления"
+              >
+                <span class="notify-toggle__icon" aria-hidden="true">✉</span>
+                <span
+                  class="header-badge header-badge--notify"
+                  data-notify-badge
+                  hidden
+                >0</span>
+              </button>
+              <div class="notify-panel" data-notify-panel hidden>
+                <div class="notify-panel__head">
+                  <strong>Уведомления</strong>
+                  <button
+                    class="button button--soft notify-panel__clear"
+                    type="button"
+                    data-action="clear-notifications"
+                  >Очистить уведомления</button>
+                </div>
+                <div class="notify-panel__list" data-notify-list>
+                  <p class="notify-panel__empty">Нет новых уведомлений</p>
+                </div>
+              </div>
+            </div>
+            <button class="icon-button search-toggle" type="button" aria-label="Открыть поиск" hidden>⌕</button>
+            <div class="header-user" hidden>
+              <img class="header-user__avatar" alt="" hidden>
+              <a class="header-user__name" href="#/profile"></a>
+              <button class="icon-button header-user__logout" type="button" aria-label="Выйти" title="Выйти">
+                <img src="./src/assets/icons/logout.png" alt="" width="20" height="20">
+              </button>
+            </div>
+            <a class="login-button" href="/api/auth/start" data-auth="guest">Войти</a>
+            <button class="menu-button" type="button" aria-label="Открыть меню" aria-expanded="false"><i></i><i></i><i></i></button>
+          </div>
+        </div>
+        <div class="search-panel" hidden><div class="container"><label><span class="sr-only">Поиск</span><input id="search-input" type="search" placeholder="Поиск по форуму" /></label><button class="search-submit" type="button">Найти</button></div></div>
+      </header>
+
+      <main id="app" class="container app" aria-live="polite"></main>
+
+      <footer class="site-footer">
+        <div class="container footer__row">
+          <a class="brand brand--footer" href="#/">
+            <span class="brand__mark" aria-hidden="true">
+              <img
+                src="./src/assets/icons/logo.jpg"
+                alt=""
+                width="39"
+                height="39"
+              >
+            </span>
+            <span><strong>Диагностика кармы</strong><small>Взгляд изнутри</small></span>
+          </a>
+          <p>Пространство для вдумчивого разговора, опыта и взаимной поддержки.</p>
+          <div><a href="#/rules">Правила</a><a href="#/contact">Связаться</a><a href="#/support">Техподдержка</a></div>
+        </div>
+        <div class="container footer__copyright">© 2026 Диагностика кармы. Взгляд изнутри</div>
+      </footer>
+    </div>
+    <script type="module" src="./src/main.js?v=20261015-hide-search"></script>
+  </body>
+</html>

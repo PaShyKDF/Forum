@@ -1,0 +1,213 @@
+volumes:
+  pg_data:
+  redis:
+  migration:
+
+services:
+  db:
+    env_file: .env
+    image: postgres:16
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./backend/src/forum/infrastructure/scripts/create_test_db.sh:/home/create_test_db.sh
+    ports:
+      - '${FORUM_DB_HOST_PORT}:${FORUM_DB_CONTAINER_PORT}'
+    environment:
+      POSTGRES_PASSWORD: ${FORUM_DB_PASSWORD}
+      POSTGRES_USER: ${FORUM_DB_USER}
+      POSTGRES_DB: ${FORUM_DB_DATABASE}
+      FORUM_DB_USER: ${FORUM_DB_USER}
+      FORUM_DB_DATABASE: ${FORUM_DB_DATABASE}
+      FORUM_TEST_DB_DATABASE: ${FORUM_TEST_DB_DATABASE}
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${FORUM_DB_USER} -d ${FORUM_DB_DATABASE}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: >
+      bash -c "
+      /usr/local/bin/docker-entrypoint.sh postgres &
+      /home/create_test_db.sh &&
+      tail -f /dev/null
+      "
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/src/forum/infrastructure/Dockerfile
+    env_file: .env
+    # Доступ к Keycloak так же, как у браузера (localhost:8282)
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '${FORUM_FASTAPI_HOST_PORT}:${FORUM_FASTAPI_CONTAINER_PORT}'
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - type: bind
+        source: ./backend/src/forum
+        target: /src/forum
+      - type: bind
+        source: ./backend/src/general
+        target: /src/general
+      - migration:/src/forum/infrastructure/database/migrations
+
+  redis:
+    image: redis:7
+    command: ['redis-server', '--requirepass', '${FORUM_REDIS_CACHE_PASSWORD}']
+    ports:
+      - '${FORUM_REDIS_CACHE_HOST_PORT}:${FORUM_REDIS_CACHE_CONTAINER_PORT}'
+    volumes:
+      - redis:/data
+    env_file:
+      - .env
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${FORUM_REDIS_CACHE_PASSWORD}', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  
+  keycloak-postgres:
+    env_file: .env
+    image: postgres:16
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${FORUM_KC_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${FORUM_KC_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${FORUM_KC_POSTGRES_DATABASE}
+    healthcheck:
+      test: pg_isready -U ${FORUM_KC_POSTGRES_USER} -d ${FORUM_KC_POSTGRES_DATABASE}
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    ports:
+      - '${FORUM_KC_POSTGRES_HOST_PORT}:${FORUM_KC_POSTGRES_CONTAINER_PORT}'
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:20.0.2
+    command:
+      - start
+      - --auto-build
+      - --db
+      - postgres
+      - --hostname-strict-https
+      - 'false'
+      - --hostname-strict
+      - 'false'
+      - --proxy
+      - edge
+      - --http-enabled
+      - 'true'
+      - --import-realm
+      - --spi-theme-cache-themes=false
+      - --spi-theme-cache-templates=false
+      - --spi-theme-static-max-age=-1
+      - --spi-user-profile-legacy-user-profile-read-only-attributes
+      - '*_RES_ACCESS_MODE'
+    environment:
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/${FORUM_KC_POSTGRES_DATABASE}
+      KC_DB_USERNAME: ${FORUM_KC_POSTGRES_USER}
+      KC_DB_PASSWORD: ${FORUM_KC_POSTGRES_PASSWORD}
+      KC_DB_SCHEMA: public
+      KC_FEATURES: preview
+      # iss/token URL как у браузера (не keycloak:8080)
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: ${FORUM_KC_HOST_PORT}
+      KC_HOSTNAME_STRICT: 'false'
+      KC_HOSTNAME_STRICT_HTTPS: 'false'
+      KC_HTTP_ENABLED: 'true'
+      KC_PROXY: edge
+      KEYCLOAK_ADMIN: ${FORUM_KC_ADMIN_LOGIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${FORUM_KC_ADMIN_PASSWORD}
+    volumes:
+      - type: bind
+        source: ./themes
+        target: /opt/keycloak/themes
+        read_only: true
+      # SPI: серверная проверка галочки на регистрации
+      - type: bind
+        source: ./keycloak-spi/providers
+        target: /opt/keycloak/providers
+        read_only: true
+    ports:
+      - ${FORUM_KC_HOST_PORT}:${FORUM_KC_CONTAINER_PORT}
+    depends_on:
+      keycloak-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:8080/realms/master"]
+      start_period: 10s
+      interval: 30s
+      retries: 3
+      timeout: 5s
+
+  taskiq-worker:
+    build:
+      context: .
+      dockerfile: backend/src/forum/infrastructure/Dockerfile
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    volumes:
+      - type: bind
+        source: ./backend/src/forum
+        target: /src/forum
+      - type: bind
+        source: ./backend/src/general
+        target: /src/general
+    command: ['bash', '/src/forum/infrastructure/scripts/taskiq_worker.sh']
+    restart: unless-stopped
+
+  taskiq-scheduler:
+    build:
+      context: .
+      dockerfile: backend/src/forum/infrastructure/Dockerfile
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      taskiq-worker:
+        condition: service_started
+    volumes:
+      - type: bind
+        source: ./backend/src/forum
+        target: /src/forum
+      - type: bind
+        source: ./backend/src/general
+        target: /src/general
+    command: ['bash', '/src/forum/infrastructure/scripts/taskiq_scheduler.sh']
+    restart: unless-stopped
+
+  frontend:
+    image: nginx:1.27-alpine
+    ports:
+      - '${FORUM_FRONTEND_HOST_PORT}:80'
+    volumes:
+      - type: bind
+        source: ./frontend
+        target: /usr/share/nginx/html
+      - type: bind
+        source: ./frontend/nginx.conf
+        target: /etc/nginx/conf.d/default.conf
+    depends_on:
+      - api
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@ad.ru
+      PGADMIN_DEFAULT_PASSWORD: 1234
+    ports:
+      - "${FORUM_PGADMIN_HOST_PORT}:${FORUM_PGADMIN_CONTAINER_PORT}"

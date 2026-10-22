@@ -1,0 +1,57 @@
+indent-width = 4
+line-length = 79
+required-version = '>=0.6.1'
+target-version = 'py311'
+preview = true
+exclude = ['migrations']
+
+[format]
+docstring-code-format = true
+docstring-code-line-length = 60
+line-ending = 'lf'
+quote-style = 'single'
+indent-style = 'space'
+
+[lint]
+ignore = [
+    'E265',
+    'F811',
+    'D100',
+    'D105',
+    'D104',
+    'D211',
+    'D213',
+    'N818',
+    'W505',
+    'ANN401',
+    'A005',
+    'ASYNC210',
+    'D203',
+    'B008',
+    'F821',
+    'B006',
+]
+select = ['E', 'F', 'UP', 'B', 'SIM', 'I']
+fixable = ['ALL']
+unfixable = []
+
+[lint.extend-per-file-ignores]
+'__init__.py' = ['E402', 'E401']
+
+[lint.flake8-annotations]
+allow-star-arg-any = true
+
+[lint.flake8-quotes]
+inline-quotes = 'single'
+
+[lint.isort]
+case-sensitive = true
+known-local-folder = ['src', 'forum', 'general']
+lines-after-imports = 2
+
+[lint.mccabe]
+max-complexity = 10
+
+[lint.pycodestyle]
+max-doc-length = 79
+max-line-length = 79

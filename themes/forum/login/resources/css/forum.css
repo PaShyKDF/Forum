@@ -1,0 +1,198 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap');
+
+:root {
+  --forum-forest: #173f35;
+  --forum-green: #246451;
+  --forum-sage: #e8f0e8;
+  --forum-line: #dfe9e2;
+  --forum-ink: #20352d;
+  --forum-muted: #718078;
+  --forum-paper: #fffdfa;
+  --forum-shadow: 0 12px 34px rgba(24, 60, 48, 0.07);
+  --forum-font: Manrope, system-ui, sans-serif;
+  --forum-display: 'Playfair Display', Georgia, serif;
+}
+
+.login-pf body {
+  background: var(--forum-paper);
+  background-image:
+    radial-gradient(
+      ellipse at 12% 0%,
+      #e5efe6 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 100% 80%,
+      #e0ecdf 0%,
+      transparent 45%
+    );
+  color: var(--forum-ink);
+  font-family: var(--forum-font);
+}
+
+.login-pf body a {
+  color: #4f7a66;
+}
+
+.login-pf body a:hover {
+  color: var(--forum-green);
+}
+
+#kc-header-wrapper {
+  font-family: var(--forum-display);
+  color: var(--forum-forest) !important;
+  letter-spacing: -0.4px;
+  text-transform: none;
+  font-size: 22px;
+  font-weight: 700;
+  padding: 24px 0 8px;
+  background: url('../img/logo.jpg') no-repeat center top;
+  background-size: 56px 56px;
+  padding-top: 72px;
+}
+
+#kc-header-wrapper a {
+  color: inherit !important;
+  text-decoration: none;
+}
+
+#kc-header-wrapper a:hover {
+  color: var(--forum-green) !important;
+}
+
+#kc-page-title {
+  font-family: var(--forum-display);
+  color: var(--forum-forest);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+}
+
+.card-pf {
+  background: #fff;
+  border: 1px solid var(--forum-line);
+  border-radius: 14px;
+  box-shadow: var(--forum-shadow);
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 12px 8px 8px;
+}
+
+.pf-c-form__label-text,
+.control-label {
+  color: #4e675a;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--forum-font);
+}
+
+.pf-c-form-control,
+input[type='text'],
+input[type='password'],
+input[type='email'] {
+  border: 1px solid var(--forum-line) !important;
+  border-radius: 8px !important;
+  background: var(--forum-paper) !important;
+  color: var(--forum-ink) !important;
+  font: 500 14px var(--forum-font) !important;
+  padding: 12px 13px !important;
+  box-shadow: none !important;
+}
+
+.pf-c-form-control:focus,
+input[type='text']:focus,
+input[type='password']:focus,
+input[type='email']:focus {
+  outline: 2px solid rgba(36, 100, 81, 0.25) !important;
+  border-color: #7aa890 !important;
+}
+
+.pf-c-button.pf-m-primary,
+#kc-form-buttons input[type='submit'],
+input[type='submit'].btn-primary {
+  background: var(--forum-forest) !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  color: #fff !important;
+  font: 700 14px var(--forum-font) !important;
+  padding: 12px 20px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  width: 100%;
+}
+
+.pf-c-button.pf-m-primary:hover,
+#kc-form-buttons input[type='submit']:hover {
+  background: var(--forum-green) !important;
+}
+
+#kc-registration,
+#kc-registration-container,
+#kc-forgot-password,
+.login-pf-settings {
+  font-family: var(--forum-font);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.alert-error,
+.pf-c-alert.pf-m-danger {
+  background: #f8eaea;
+  border: 1px solid #efd0d0;
+  border-radius: 8px;
+  color: #9b3b3b;
+}
+
+.alert-success,
+.pf-c-alert.pf-m-success {
+  background: #e8f3ec;
+  border: 1px solid #cfe3d7;
+  border-radius: 8px;
+  color: #2f6a52;
+}
+
+#kc-info-wrapper {
+  background: transparent;
+  font-family: var(--forum-font);
+  color: var(--forum-muted);
+}
+
+/* Только русский: скрыть переключатель локали Keycloak. */
+#kc-locale,
+#kc-locale-wrapper,
+.kc-dropdown {
+  display: none !important;
+}
+
+.forum-rules-consent {
+  margin: 8px 0 4px;
+}
+
+.forum-rules-consent__label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  color: var(--forum-ink);
+  font: 500 13px/1.45 var(--forum-font);
+  cursor: pointer;
+}
+
+.forum-rules-consent__label input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--forum-green);
+  cursor: pointer;
+}
+
+.forum-rules-consent__label a {
+  color: #4f7a66;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.forum-rules-consent__label a:hover {
+  color: var(--forum-green);
+}
