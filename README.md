@@ -126,6 +126,58 @@ flowchart LR
 - **MessageBus** — команды возвращают результат клиенту;
   события обрабатываются best-effort и не ломают основной поток.
 
+## Деплой на VPS (app и Keycloak раздельно)
+
+Локально по-прежнему один файл `docker-compose.yaml`
+(приложение + Keycloak вместе).
+
+На production стеки разделены, чтобы CI приложения не
+перезапускал IdP:
+
+| Стек | Compose | Когда обновлять |
+|------|---------|-----------------|
+| IdP | `docker-compose.keycloak.prod.yaml` | редко (темы, SPI, KC) |
+| App | `docker-compose.app.prod.yaml` | почти каждый деплой |
+
+```mermaid
+flowchart LR
+    ciApp[CI app] --> appStack[forum-app]
+    ciIdp[CI idp rare] --> idpStack[forum-idp]
+    appStack --> net[forum_public_net]
+    idpStack --> net
+```
+
+Порядок на сервере:
+
+```bash
+docker network create forum_public_net
+
+# IdP (один раз / редко)
+docker compose -p forum-idp \
+  -f docker-compose.keycloak.prod.yaml up -d
+
+# Приложение (CI)
+docker compose -p forum-app \
+  -f docker-compose.app.prod.yaml up -d --build
+```
+
+В prod `.env` важно:
+
+- `FORUM_KC_HOSTNAME` — публичный hostname Keycloak
+- `FORUM_KEYCLOAK_BASE_URL` — URL для браузера
+- `FORUM_KEYCLOAK_INTERNAL_URL=http://keycloak:8080`
+  (имя сервиса IdP-стека в общей сети)
+- `FORUM_DOCKER_NETWORK=forum_public_net`
+
+У Keycloak DB — named volume `keycloak_pg_data`:
+realm и пользователи переживают рестарт контейнера.
+
+### Миграции Alembic
+
+Ревизии не хранятся в git: при старте API (`app.sh`) сравнивает
+модели с БД, при отличиях делает `--autogenerate` и `upgrade head`.
+Файлы лежат в volume `alembic_versions` внутри Docker.
+
 ## Дополнительно
 
 - Backend: [backend/README.md](backend/README.md)

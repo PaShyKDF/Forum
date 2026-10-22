@@ -1,7 +1,13 @@
+# Локальная разработка: всё в одном стеке (app + Keycloak).
+# Production: разнесённые стеки
+#   docker-compose.keycloak.prod.yaml  — IdP (редко)
+#   docker-compose.app.prod.yaml       — приложение (CI)
+
 volumes:
   pg_data:
   redis:
-  migration:
+  # Только versions/: env.py остаётся из кода, ревизии — в volume
+  alembic_versions:
 
 services:
   db:
@@ -54,7 +60,7 @@ services:
       - type: bind
         source: ./backend/src/general
         target: /src/general
-      - migration:/src/forum/infrastructure/database/migrations
+      - alembic_versions:/src/forum/infrastructure/database/migrations/versions
 
   redis:
     image: redis:7

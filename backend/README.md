@@ -73,8 +73,10 @@ class Post(Base, IDMixin, CreatedAtMixin):
 ```
 
 2. Импортируйте модель в `domain/models/__init__.py` и добавьте в `__all__`.
-3. При следующем `docker compose up` Alembic создаст миграцию и применит её
-   (см. `infrastructure/scripts/app.sh`).
+3. При следующем старте API `app.sh` сам сделает
+   `revision --autogenerate` (если модели отличаются от БД)
+   и `upgrade head`. Файлы ревизий пишутся в Docker volume
+   `alembic_versions`, в git их коммитить не нужно.
 
 ## Как добавить репозиторий
 
@@ -108,6 +110,26 @@ await example_background_task.kiq('текст')
 - `POST /api/demo/enqueue` — постановка в очередь
 - `POST /api/test` — ещё один тест MessageBus
 
+## Production: app и Keycloak раздельно
+
+Локально: `docker compose up` из корня репозитория
+(всё в `docker-compose.yaml`).
+
+На VPS:
+
+1. Сеть (один раз): `docker network create forum_public_net`
+2. IdP: `docker compose -p forum-idp -f docker-compose.keycloak.prod.yaml up -d`
+3. App: `docker compose -p forum-app -f docker-compose.app.prod.yaml up -d --build`
+
+CI приложения трогает только app-стек. IdP обновляется
+отдельным редким job. Подробности — корневой `README.md`.
+
 ## Переменные окружения
 
 Префикс `FORUM_*`. Шаблон — `.env.example`.
+
+Для split-prod дополнительно:
+
+- `FORUM_KC_HOSTNAME` — hostname Keycloak для iss
+- `FORUM_KEYCLOAK_INTERNAL_URL=http://keycloak:8080`
+- `FORUM_DOCKER_NETWORK=forum_public_net`

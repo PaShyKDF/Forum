@@ -1,0 +1,106 @@
+# Production IdP-стек: Keycloak + его PostgreSQL.
+# Поднимается отдельно от приложения (редко, осознанно).
+#
+# Перед первым запуском:
+#   docker network create forum_public_net
+#
+# Запуск:
+#   docker compose -p forum-idp -f docker-compose.keycloak.prod.yaml up -d
+#
+# Деплой app-стека не перезапускает эти сервисы.
+
+name: forum-idp
+
+volumes:
+  keycloak_pg_data:
+
+networks:
+  forum_public_net:
+    external: true
+    name: ${FORUM_DOCKER_NETWORK:-forum_public_net}
+
+services:
+  keycloak-postgres:
+    env_file: .env
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${FORUM_KC_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${FORUM_KC_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${FORUM_KC_POSTGRES_DATABASE}
+    volumes:
+      - keycloak_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U ${FORUM_KC_POSTGRES_USER} -d ${FORUM_KC_POSTGRES_DATABASE}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - '${FORUM_KC_POSTGRES_HOST_PORT}:${FORUM_KC_POSTGRES_CONTAINER_PORT}'
+    networks:
+      - forum_public_net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:20.0.2
+    restart: unless-stopped
+    command:
+      - start
+      - --auto-build
+      - --db
+      - postgres
+      - --hostname-strict-https
+      - 'false'
+      - --hostname-strict
+      - 'false'
+      - --proxy
+      - edge
+      - --http-enabled
+      - 'true'
+      - --import-realm
+      - --spi-theme-cache-themes=false
+      - --spi-theme-cache-templates=false
+      - --spi-theme-static-max-age=-1
+      - --spi-user-profile-legacy-user-profile-read-only-attributes
+      - '*_RES_ACCESS_MODE'
+    environment:
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/${FORUM_KC_POSTGRES_DATABASE}
+      KC_DB_USERNAME: ${FORUM_KC_POSTGRES_USER}
+      KC_DB_PASSWORD: ${FORUM_KC_POSTGRES_PASSWORD}
+      KC_DB_SCHEMA: public
+      KC_FEATURES: preview
+      # Публичный hostname для iss/redirect (домен или IP:порт)
+      KC_HOSTNAME: ${FORUM_KC_HOSTNAME:-localhost}
+      KC_HOSTNAME_PORT: ${FORUM_KC_HOST_PORT}
+      KC_HOSTNAME_STRICT: 'false'
+      KC_HOSTNAME_STRICT_HTTPS: 'false'
+      KC_HTTP_ENABLED: 'true'
+      KC_PROXY: edge
+      KEYCLOAK_ADMIN: ${FORUM_KC_ADMIN_LOGIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${FORUM_KC_ADMIN_PASSWORD}
+    volumes:
+      - type: bind
+        source: ./themes
+        target: /opt/keycloak/themes
+        read_only: true
+      - type: bind
+        source: ./keycloak-spi/providers
+        target: /opt/keycloak/providers
+        read_only: true
+    ports:
+      - ${FORUM_KC_HOST_PORT}:${FORUM_KC_CONTAINER_PORT}
+    depends_on:
+      keycloak-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://0.0.0.0:8080/realms/master']
+      start_period: 30s
+      interval: 30s
+      retries: 5
+      timeout: 5s
+    networks:
+      - forum_public_net

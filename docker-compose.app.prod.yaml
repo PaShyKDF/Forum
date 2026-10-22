@@ -1,0 +1,164 @@
+# Production app-стек без Keycloak.
+# Keycloak поднимается отдельно:
+#   docker-compose.keycloak.prod.yaml
+#
+# Перед первым запуском (если сети ещё нет):
+#   docker network create forum_public_net
+#
+# Запуск:
+#   docker compose -p forum-app -f docker-compose.app.prod.yaml up -d --build
+#
+# В .env для prod:
+#   FORUM_KEYCLOAK_BASE_URL — публичный URL Keycloak (браузер)
+#   FORUM_KEYCLOAK_INTERNAL_URL — http://keycloak:8080 (docker DNS)
+
+name: forum-app
+
+volumes:
+  pg_data:
+  redis:
+  # Только versions/: env.py остаётся из кода, ревизии — в volume
+  alembic_versions:
+
+networks:
+  forum_public_net:
+    external: true
+    name: ${FORUM_DOCKER_NETWORK:-forum_public_net}
+
+services:
+  db:
+    env_file: .env
+    image: postgres:16
+    restart: unless-stopped
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./backend/src/forum/infrastructure/scripts/create_test_db.sh:/home/create_test_db.sh
+    ports:
+      - '${FORUM_DB_HOST_PORT}:${FORUM_DB_CONTAINER_PORT}'
+    environment:
+      POSTGRES_PASSWORD: ${FORUM_DB_PASSWORD}
+      POSTGRES_USER: ${FORUM_DB_USER}
+      POSTGRES_DB: ${FORUM_DB_DATABASE}
+      FORUM_DB_USER: ${FORUM_DB_USER}
+      FORUM_DB_DATABASE: ${FORUM_DB_DATABASE}
+      FORUM_TEST_DB_DATABASE: ${FORUM_TEST_DB_DATABASE}
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${FORUM_DB_USER} -d ${FORUM_DB_DATABASE}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: >
+      bash -c "
+      /usr/local/bin/docker-entrypoint.sh postgres &
+      /home/create_test_db.sh &&
+      tail -f /dev/null
+      "
+    networks:
+      - forum_public_net
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    command: ['redis-server', '--requirepass', '${FORUM_REDIS_CACHE_PASSWORD}']
+    ports:
+      - '${FORUM_REDIS_CACHE_HOST_PORT}:${FORUM_REDIS_CACHE_CONTAINER_PORT}'
+    volumes:
+      - redis:/data
+    env_file:
+      - .env
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${FORUM_REDIS_CACHE_PASSWORD}', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - forum_public_net
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/src/forum/infrastructure/Dockerfile
+    env_file: .env
+    restart: unless-stopped
+    ports:
+      - '${FORUM_FASTAPI_HOST_PORT}:${FORUM_FASTAPI_CONTAINER_PORT}'
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - type: bind
+        source: ./backend/src/forum
+        target: /src/forum
+      - type: bind
+        source: ./backend/src/general
+        target: /src/general
+      - alembic_versions:/src/forum/infrastructure/database/migrations/versions
+    networks:
+      - forum_public_net
+
+  taskiq-worker:
+    build:
+      context: .
+      dockerfile: backend/src/forum/infrastructure/Dockerfile
+    env_file: .env
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    volumes:
+      - type: bind
+        source: ./backend/src/forum
+        target: /src/forum
+      - type: bind
+        source: ./backend/src/general
+        target: /src/general
+    command: ['bash', '/src/forum/infrastructure/scripts/taskiq_worker.sh']
+    networks:
+      - forum_public_net
+
+  taskiq-scheduler:
+    build:
+      context: .
+      dockerfile: backend/src/forum/infrastructure/Dockerfile
+    env_file: .env
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      taskiq-worker:
+        condition: service_started
+    volumes:
+      - type: bind
+        source: ./backend/src/forum
+        target: /src/forum
+      - type: bind
+        source: ./backend/src/general
+        target: /src/general
+    command: ['bash', '/src/forum/infrastructure/scripts/taskiq_scheduler.sh']
+    networks:
+      - forum_public_net
+
+  frontend:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - '${FORUM_FRONTEND_HOST_PORT}:80'
+    volumes:
+      - type: bind
+        source: ./frontend
+        target: /usr/share/nginx/html
+    # Не монтируем nginx.conf файлом: на Docker Desktop/WSL
+    # bind одного файла часто ломается.
+    command:
+      - /bin/sh
+      - -c
+      - cp /usr/share/nginx/html/nginx.conf /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'
+    depends_on:
+      - api
+    networks:
+      - forum_public_net
