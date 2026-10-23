@@ -1018,6 +1018,7 @@ export const chatsPageTemplate = (
 
 export const contactTemplate = (contact) => {
   const title = contact.title || 'Связаться';
+  const authorName = contact.authorName || '';
   const bio = contact.bio || '';
   const photoUrl = contact.photoUrl || '';
   const telegramUrl = contact.telegramUrl || '#';
@@ -1026,9 +1027,22 @@ export const contactTemplate = (contact) => {
     ? `<img
         class="contact-page__photo"
         src="${escapeHtml(photoUrl)}"
-        alt="Фото автора форума"
+        alt="${escapeHtml(authorName || 'Фото автора форума')}"
       >`
     : `<div class="contact-page__photo contact-page__photo--placeholder" aria-hidden="true">◌</div>`;
+  const nameParts = authorName.trim().split(/\s+/).filter(Boolean);
+  const surname = nameParts[0] || '';
+  const givenNames = nameParts.slice(1).join(' ');
+  const authorHtml = surname
+    ? `<p class="contact-card__name">
+        <span class="contact-card__name-surname">${escapeHtml(surname)}</span>
+        ${
+          givenNames
+            ? `<span class="contact-card__name-given">${escapeHtml(givenNames)}</span>`
+            : ''
+        }
+      </p>`
+    : '';
   return `<div class="breadcrumbs">
       <a href="#/">Форум</a><span>›</span>
       <b>Связаться</b>
@@ -1042,20 +1056,21 @@ export const contactTemplate = (contact) => {
           <p class="eyebrow">Контакты</p>
           <h1>${escapeHtml(title)}</h1>
           <p class="contact-card__bio">${escapeHtml(bio)}</p>
-          <div class="contact-card__actions">
-            <a
-              class="button contact-card__btn contact-card__btn--telegram"
-              href="${escapeHtml(telegramUrl)}"
-              target="_blank"
-              rel="noopener noreferrer"
-            >Telegram</a>
-            <a
-              class="button button--soft contact-card__btn contact-card__btn--whatsapp"
-              href="${escapeHtml(whatsappUrl)}"
-              target="_blank"
-              rel="noopener noreferrer"
-            >WhatsApp</a>
-          </div>
+        </div>
+        ${authorHtml}
+        <div class="contact-card__actions">
+          <a
+            class="button contact-card__btn contact-card__btn--telegram"
+            href="${escapeHtml(telegramUrl)}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >Telegram</a>
+          <a
+            class="button button--soft contact-card__btn contact-card__btn--whatsapp"
+            href="${escapeHtml(whatsappUrl)}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >WhatsApp</a>
         </div>
       </article>
     </section>`;

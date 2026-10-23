@@ -76,7 +76,6 @@ class Post(Base, IDMixin, CreatedAtMixin):
 3. При следующем старте API `app.sh` сам сделает
    `revision --autogenerate` (если модели отличаются от БД)
    и `upgrade head`. Файлы ревизий пишутся в Docker volume
-   `alembic_versions`, в git их коммитить не нужно.
 
 ## Как добавить репозиторий
 

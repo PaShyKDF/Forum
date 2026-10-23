@@ -1,1 +1,6 @@
-Generic single-database configuration with an async URL.
+Alembic migrations.
+
+`env.py` и `script.py.mako` — в репозитории.
+Ревизии в `versions/` создаются автоматически при старте API
+(`app.sh` → `revision --autogenerate` + `upgrade head`) и хранятся
+в Docker volume `alembic_versions`, а не в git.

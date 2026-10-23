@@ -466,6 +466,7 @@ export const forumApi = {
     const payload = await request('/api/contact');
     return {
       title: payload.title || 'Связаться',
+      authorName: payload.author_name || '',
       bio: payload.bio || '',
       photoUrl: payload.photo_url || '',
       telegramUrl: payload.telegram_url || '',

@@ -204,9 +204,12 @@ services:
       - type: bind
         source: ./frontend
         target: /usr/share/nginx/html
-      - type: bind
-        source: ./frontend/nginx.conf
-        target: /etc/nginx/conf.d/default.conf
+    # Не монтируем nginx.conf файлом в conf.d: на Docker Desktop/WSL
+    # bind одного файла часто ломается («not a directory» / no such file).
+    command:
+      - /bin/sh
+      - -c
+      - cp /usr/share/nginx/html/nginx.conf /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'
     depends_on:
       - api
 

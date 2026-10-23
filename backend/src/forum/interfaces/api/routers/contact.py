@@ -10,20 +10,17 @@ router = APIRouter(
     tags=['contact'],
 )
 
-# Placeholder-фото для теста (абстрактный портрет)
-_CONTACT_PHOTO_URL = (
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d'
-    '?auto=format&fit=crop&w=640&q=80'
-)
+_CONTACT_PHOTO_URL = '/src/assets/icons/contact.jpg'
+_CONTACT_AUTHOR_NAME = 'Клищенко Дмитрий Владимирович'
 
 _CONTACT_BIO = (
     'Автор и куратор форума «Диагностика кармы. '
     'Взгляд изнутри». Помогаю участникам мягко '
     'разбираться в темах самопознания, отношений '
     'и личного опыта — через уважительный диалог '
-    'и обмен наблюдениями. Если у вас есть вопрос '
-    'по работе форума или предложение по развитию '
-    'сообщества, напишите в удобный мессенджер.'
+    'и обмен наблюдениями. Если у вас есть предложение по '
+    'развитию сообщества или необходимость в оперативной связи'
+    ', напишите в удобный мессенджер.'
 )
 
 
@@ -43,6 +40,7 @@ async def get_contact_page() -> ContactPageResponse:
     contact = configuration.contact
     return ContactPageResponse(
         title='Связаться с автором',
+        author_name=_CONTACT_AUTHOR_NAME,
         bio=_CONTACT_BIO,
         photo_url=_CONTACT_PHOTO_URL,
         telegram_url=contact.telegram_url.strip(),
