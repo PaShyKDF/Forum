@@ -161,13 +161,23 @@ docker compose -p forum-app \
   -f docker-compose.app.prod.yaml up -d --build
 ```
 
-В prod `.env` важно:
+В prod `.env` (один домен + path `/auth`):
 
-- `FORUM_KC_HOSTNAME` — публичный hostname Keycloak
-- `FORUM_KEYCLOAK_BASE_URL` — URL для браузера
-- `FORUM_KEYCLOAK_INTERNAL_URL=http://keycloak:8080`
-  (имя сервиса IdP-стека в общей сети)
+- `FORUM_FRONTEND_URL=https://example.com`
+- `FORUM_CORS_ORIGINS=https://example.com`
+- `FORUM_KC_HOSTNAME=example.com`
+- `FORUM_KC_HOSTNAME_PORT=443` — порт в iss/redirect (не `HOST_PORT`)
+- `FORUM_KC_HTTP_RELATIVE_PATH=/auth`
+- `FORUM_KEYCLOAK_BASE_URL=https://example.com/auth`
+- `FORUM_KEYCLOAK_INTERNAL_URL=http://keycloak:8080/auth`
 - `FORUM_DOCKER_NETWORK=forum_public_net`
+
+Edge nginx: пример `deploy/nginx-edge.conf.example`
+(`location /auth/` → `127.0.0.1:$FORUM_KC_HOST_PORT`,
+`/` → frontend).
+
+В клиенте Keycloak: redirect URI
+`https://example.com/api/login/callback`.
 
 У Keycloak DB — named volume `keycloak_pg_data`:
 realm и пользователи переживают рестарт контейнера.

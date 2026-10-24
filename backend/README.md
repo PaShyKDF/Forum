@@ -130,5 +130,8 @@ CI приложения трогает только app-стек. IdP обнов
 Для split-prod дополнительно:
 
 - `FORUM_KC_HOSTNAME` — hostname Keycloak для iss
-- `FORUM_KEYCLOAK_INTERNAL_URL=http://keycloak:8080`
+- `FORUM_KC_HOSTNAME_PORT=443` — порт в публичных URL (prod HTTPS)
+- `FORUM_KC_HTTP_RELATIVE_PATH=/auth` — path за edge nginx
+- `FORUM_KEYCLOAK_BASE_URL=https://example.com/auth`
+- `FORUM_KEYCLOAK_INTERNAL_URL=http://keycloak:8080/auth`
 - `FORUM_DOCKER_NETWORK=forum_public_net`

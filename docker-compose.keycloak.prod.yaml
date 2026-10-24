@@ -7,6 +7,14 @@
 # Запуск:
 #   docker compose -p forum-idp -f docker-compose.keycloak.prod.yaml up -d
 #
+# Один домен (path /auth) — в .env:
+#   FORUM_KC_HOSTNAME=example.com
+#   FORUM_KC_HOSTNAME_PORT=443
+#   FORUM_KC_HTTP_RELATIVE_PATH=/auth
+#   FORUM_KEYCLOAK_BASE_URL=https://example.com/auth
+#   FORUM_KEYCLOAK_INTERNAL_URL=http://keycloak:8080/auth
+#
+# Edge nginx на VPS: location /auth/ → 127.0.0.1:${FORUM_KC_HOST_PORT}
 # Деплой app-стека не перезапускает эти сервисы.
 
 name: forum-idp
@@ -73,9 +81,12 @@ services:
       KC_DB_PASSWORD: ${FORUM_KC_POSTGRES_PASSWORD}
       KC_DB_SCHEMA: public
       KC_FEATURES: preview
-      # Публичный hostname для iss/redirect (домен или IP:порт)
+      # Публичный hostname для iss/redirect (без схемы)
       KC_HOSTNAME: ${FORUM_KC_HOSTNAME:-localhost}
-      KC_HOSTNAME_PORT: ${FORUM_KC_HOST_PORT}
+      # Порт в публичных URL (prod за HTTPS: 443; не путать с HOST_PORT)
+      KC_HOSTNAME_PORT: ${FORUM_KC_HOSTNAME_PORT:-443}
+      # Path за reverse proxy: /auth или пусто (корень)
+      KC_HTTP_RELATIVE_PATH: ${FORUM_KC_HTTP_RELATIVE_PATH:-}
       KC_HOSTNAME_STRICT: 'false'
       KC_HOSTNAME_STRICT_HTTPS: 'false'
       KC_HTTP_ENABLED: 'true'
@@ -97,7 +108,11 @@ services:
       keycloak-postgres:
         condition: service_healthy
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://0.0.0.0:8080/realms/master']
+      test:
+        [
+          'CMD-SHELL',
+          'curl -f "http://0.0.0.0:8080$${KC_HTTP_RELATIVE_PATH}/realms/master"',
+        ]
       start_period: 30s
       interval: 30s
       retries: 5

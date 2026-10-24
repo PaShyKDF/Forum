@@ -126,8 +126,9 @@ services:
       KC_DB_SCHEMA: public
       KC_FEATURES: preview
       # iss/token URL как у браузера (не keycloak:8080)
-      KC_HOSTNAME: localhost
-      KC_HOSTNAME_PORT: ${FORUM_KC_HOST_PORT}
+      KC_HOSTNAME: ${FORUM_KC_HOSTNAME:-localhost}
+      KC_HOSTNAME_PORT: ${FORUM_KC_HOSTNAME_PORT:-8282}
+      KC_HTTP_RELATIVE_PATH: ${FORUM_KC_HTTP_RELATIVE_PATH:-}
       KC_HOSTNAME_STRICT: 'false'
       KC_HOSTNAME_STRICT_HTTPS: 'false'
       KC_HTTP_ENABLED: 'true'
@@ -150,7 +151,11 @@ services:
       keycloak-postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://0.0.0.0:8080/realms/master"]
+      test:
+        [
+          'CMD-SHELL',
+          'curl -f "http://0.0.0.0:8080$${KC_HTTP_RELATIVE_PATH}/realms/master"',
+        ]
       start_period: 10s
       interval: 30s
       retries: 3

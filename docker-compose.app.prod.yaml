@@ -8,9 +8,9 @@
 # Запуск:
 #   docker compose -p forum-app -f docker-compose.app.prod.yaml up -d --build
 #
-# В .env для prod:
-#   FORUM_KEYCLOAK_BASE_URL — публичный URL Keycloak (браузер)
-#   FORUM_KEYCLOAK_INTERNAL_URL — http://keycloak:8080 (docker DNS)
+# В .env для prod (один домен + /auth):
+#   FORUM_KEYCLOAK_BASE_URL=https://example.com/auth
+#   FORUM_KEYCLOAK_INTERNAL_URL=http://keycloak:8080/auth
 
 name: forum-app
 
