@@ -127,7 +127,6 @@ services:
       KC_FEATURES: preview
       # iss/token URL как у браузера (не keycloak:8080)
       KC_HOSTNAME: ${FORUM_KC_HOSTNAME:-localhost}
-      KC_HOSTNAME_PORT: ${FORUM_KC_HOSTNAME_PORT:-8282}
       KC_HTTP_RELATIVE_PATH: ${FORUM_KC_HTTP_RELATIVE_PATH:-}
       KC_HOSTNAME_STRICT: 'false'
       KC_HOSTNAME_STRICT_HTTPS: 'false'

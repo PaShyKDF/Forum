@@ -166,7 +166,6 @@ docker compose -p forum-app \
 - `FORUM_FRONTEND_URL=https://example.com`
 - `FORUM_CORS_ORIGINS=https://example.com`
 - `FORUM_KC_HOSTNAME=example.com`
-- `FORUM_KC_HOSTNAME_PORT=443` — порт в iss/redirect (не `HOST_PORT`)
 - `FORUM_KC_HTTP_RELATIVE_PATH=/auth`
 - `FORUM_KEYCLOAK_BASE_URL=https://example.com/auth`
 - `FORUM_KEYCLOAK_INTERNAL_URL=http://keycloak:8080/auth`

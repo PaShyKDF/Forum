@@ -9,7 +9,6 @@
 #
 # Один домен (path /auth) — в .env:
 #   FORUM_KC_HOSTNAME=example.com
-#   FORUM_KC_HOSTNAME_PORT=443
 #   FORUM_KC_HTTP_RELATIVE_PATH=/auth
 #   FORUM_KEYCLOAK_BASE_URL=https://example.com/auth
 #   FORUM_KEYCLOAK_INTERNAL_URL=http://keycloak:8080/auth
@@ -83,8 +82,6 @@ services:
       KC_FEATURES: preview
       # Публичный hostname для iss/redirect (без схемы)
       KC_HOSTNAME: ${FORUM_KC_HOSTNAME:-localhost}
-      # Порт в публичных URL (prod за HTTPS: 443; не путать с HOST_PORT)
-      KC_HOSTNAME_PORT: ${FORUM_KC_HOSTNAME_PORT:-443}
       # Path за reverse proxy: /auth или пусто (корень)
       KC_HTTP_RELATIVE_PATH: ${FORUM_KC_HTTP_RELATIVE_PATH:-}
       KC_HOSTNAME_STRICT: 'false'
