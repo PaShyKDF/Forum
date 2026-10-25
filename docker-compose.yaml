@@ -127,7 +127,10 @@ services:
       KC_FEATURES: preview
       # iss/token URL как у браузера (не keycloak:8080)
       KC_HOSTNAME: ${FORUM_KC_HOSTNAME:-localhost}
-      KC_HTTP_RELATIVE_PATH: ${FORUM_KC_HTTP_RELATIVE_PATH:-}
+      # Local: браузер на :8282 — порт должен быть в iss/admin URL
+      KC_HOSTNAME_PORT: ${FORUM_KC_HOSTNAME_PORT:-8282}
+      # / = корень. Пустую строку KC не принимает.
+      KC_HTTP_RELATIVE_PATH: ${FORUM_KC_HTTP_RELATIVE_PATH:-/}
       KC_HOSTNAME_STRICT: 'false'
       KC_HOSTNAME_STRICT_HTTPS: 'false'
       KC_HTTP_ENABLED: 'true'
@@ -153,7 +156,7 @@ services:
       test:
         [
           'CMD-SHELL',
-          'curl -f "http://0.0.0.0:8080$${KC_HTTP_RELATIVE_PATH}/realms/master"',
+          'curl -f "http://0.0.0.0:8080$${KC_HTTP_RELATIVE_PATH%/}/realms/master"',
         ]
       start_period: 10s
       interval: 30s

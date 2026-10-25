@@ -82,8 +82,8 @@ services:
       KC_FEATURES: preview
       # Публичный hostname для iss/redirect (без схемы)
       KC_HOSTNAME: ${FORUM_KC_HOSTNAME:-localhost}
-      # Path за reverse proxy: /auth или пусто (корень)
-      KC_HTTP_RELATIVE_PATH: ${FORUM_KC_HTTP_RELATIVE_PATH:-}
+      # Path за reverse proxy: /auth. Не оставляйте "".
+      KC_HTTP_RELATIVE_PATH: ${FORUM_KC_HTTP_RELATIVE_PATH:-/auth}
       KC_HOSTNAME_STRICT: 'false'
       KC_HOSTNAME_STRICT_HTTPS: 'false'
       KC_HTTP_ENABLED: 'true'
@@ -108,7 +108,7 @@ services:
       test:
         [
           'CMD-SHELL',
-          'curl -f "http://0.0.0.0:8080$${KC_HTTP_RELATIVE_PATH}/realms/master"',
+          'curl -f "http://0.0.0.0:8080$${KC_HTTP_RELATIVE_PATH%/}/realms/master"',
         ]
       start_period: 30s
       interval: 30s
