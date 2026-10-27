@@ -4,11 +4,17 @@
 #   VPS_HOST         — IP или hostname сервера
 #   VPS_USER         — SSH-пользователь
 #   VPS_SSH_KEY      — приватный ключ (весь PEM, включая BEGIN/END)
+#   VPS_SSH_PASSPHRASE — пароль ключа (если ключ с passphrase;
+#                        лучше отдельный CI-ключ без пароля)
 #   VPS_DEPLOY_PATH  — абсолютный путь к клону репо на сервере
 #                      (например /home/ubuntu/Forum)
 #
 # На VPS заранее: git clone, .env, docker network create forum_public_net,
-# ключ CI в ~/.ssh/authorized_keys.
+# публичный ключ CI в ~/.ssh/authorized_keys.
+#
+# Рекомендуется отдельный ключ без passphrase:
+#   ssh-keygen -t ed25519 -C 'github-actions-forum' -f ./ci_deploy -N ''
+
 name: Deploy Forum app
 
 on:
@@ -31,6 +37,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
           script_stop: true
           envs: DEPLOY_PATH
           script: |
