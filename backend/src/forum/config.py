@@ -391,6 +391,12 @@ class VisitorsConfig:
         'FORUM_VISITOR_ANON_COOKIE_MAX_AGE',
         31_536_000,
     )
+    # Local Docker: peer = 172.x gateway, публичный IP
+    # через egress lookup (ip-api). В PROD выкл. по умолчанию.
+    use_egress_ip_when_private: bool = env.bool(
+        'FORUM_VISITORS_USE_EGRESS_IP_WHEN_PRIVATE',
+        env('FORUM_MODE', 'DEV') == 'DEV',
+    )
 
     def __post_init__(self):
         if self.touch_interval_seconds < 1:

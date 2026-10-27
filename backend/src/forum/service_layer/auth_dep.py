@@ -7,6 +7,7 @@ from forum.domain.schemas.users import UserResponse
 from forum.service_layer.auth_cookies import (
     refresh_session_if_needed,
 )
+from forum.service_layer.client_ip import resolve_client_ip
 from forum.service_layer.handlers.auth import (
     ensure_user_command_from_keycloak,
 )
@@ -142,6 +143,7 @@ async def get_current_user(
         command = ensure_user_command_from_keycloak(
             user_info,
             anon_id=read_anon_id(request),
+            client_ip=await resolve_client_ip(request),
         )
     except ValueError as exc:
         raise HTTPException(

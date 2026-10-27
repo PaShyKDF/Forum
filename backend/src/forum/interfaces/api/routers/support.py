@@ -15,6 +15,7 @@ from forum.interfaces.api.error_mapping import (
 from forum.service_layer.auth_dep import (
     get_optional_current_user,
 )
+from forum.service_layer.client_ip import resolve_client_ip
 from forum.service_layer.messagebus import (
     MessageBus,
     get_message_bus,
@@ -25,32 +26,6 @@ router = APIRouter(
     prefix='/support',
     tags=['support'],
 )
-
-
-def _extract_client_ip(request: Request) -> str | None:
-    """
-    Достаёт IP клиента из proxy-заголовков или peer.
-
-    Порядок: X-Forwarded-For (первый), X-Real-IP,
-    затем request.client.host.
-
-    Args:
-        request: входящий HTTP-запрос.
-
-    Returns:
-        Строка IP или None, если определить нельзя.
-    """
-    forwarded = request.headers.get('x-forwarded-for')
-    if forwarded:
-        first = forwarded.split(',')[0].strip()
-        if first:
-            return first
-    real_ip = request.headers.get('x-real-ip')
-    if real_ip and real_ip.strip():
-        return real_ip.strip()
-    if request.client and request.client.host:
-        return request.client.host
-    return None
 
 
 @router.post(
@@ -90,7 +65,7 @@ async def create_support_ticket(
         body=payload.body,
         email=payload.email,
         user_uid=current_user.uid if current_user else None,
-        client_ip=_extract_client_ip(request),
+        client_ip=await resolve_client_ip(request),
     )
     try:
         return await message_bus.handle(command)

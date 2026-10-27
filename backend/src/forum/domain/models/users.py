@@ -84,6 +84,22 @@ class User(
         DateTime,
         nullable=True,
     )
+    last_ip: Mapped[str | None] = mapped_column(
+        String(45),
+        nullable=True,
+    )
+    last_country: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
+    last_city: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+    )
+    last_ip_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
     # Cookie ID гостя (NULL у зарегистрированных)
     anon_id: Mapped[str | None] = mapped_column(
         String(64),

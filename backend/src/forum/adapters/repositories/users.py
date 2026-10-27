@@ -221,6 +221,9 @@ class UserRepository(SQLAlchemyRepository[User, uuid.UUID]):
         *,
         anon_id: str,
         seen_at: datetime,
+        ip: str | None = None,
+        country: str | None = None,
+        city: str | None = None,
     ) -> User:
         """
         Создаёт гостевую запись в таблице user.
@@ -231,6 +234,9 @@ class UserRepository(SQLAlchemyRepository[User, uuid.UUID]):
         Args:
             anon_id: уникальный anon_id cookie.
             seen_at: начальный last_seen_at.
+            ip: последний IP клиента или None.
+            country: страна по geo или None.
+            city: город по geo или None.
 
         Returns:
             Сохранённый гостевой User.
@@ -248,6 +254,10 @@ class UserRepository(SQLAlchemyRepository[User, uuid.UUID]):
             is_guest=True,
             registered_at=None,
             last_seen_at=seen_at,
+            last_ip=ip,
+            last_country=country,
+            last_city=city,
+            last_ip_at=seen_at if ip else None,
         )
         return await self.add(entity)
 
@@ -266,10 +276,47 @@ class UserRepository(SQLAlchemyRepository[User, uuid.UUID]):
         Returns:
             Обновлённый User или None, если не найден.
         """
+        return await self.touch_presence(uid, seen_at=seen_at)
+
+    async def touch_presence(
+        self,
+        uid: uuid.UUID,
+        *,
+        seen_at: datetime,
+        ip: str | None = None,
+        country: str | None = None,
+        city: str | None = None,
+    ) -> User | None:
+        """
+        Обновляет last_seen и опционально IP/гео.
+
+        Args:
+            uid: UUID пользователя.
+            seen_at: новое значение last_seen_at.
+            ip: IP клиента или None (не трогать IP).
+            country: страна или None (не трогать).
+            city: город или None (не трогать).
+
+        Returns:
+            Обновлённый User или None, если не найден.
+        """
         user = await self.get_by_id(uid)
         if user is None:
             return None
         user.last_seen_at = seen_at
+        if ip is not None:
+            ip_changed = user.last_ip != ip
+            user.last_ip = ip
+            if country is not None:
+                user.last_country = country
+            if city is not None:
+                user.last_city = city
+            if (
+                ip_changed
+                or country is not None
+                or city is not None
+            ):
+                user.last_ip_at = seen_at
         await self.session.flush()
         await self.session.refresh(user)
         return user

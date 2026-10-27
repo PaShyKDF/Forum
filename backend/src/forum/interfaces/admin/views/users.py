@@ -12,6 +12,11 @@ class UserAdmin(BaseModelView, model=User):
         'email',
         'is_guest',
         'is_active',
+        'last_ip',
+        'last_country',
+        'last_city',
+        'last_ip_at',
+        'last_seen_at',
         'created_at',
     ]
     form_excluded_columns = [
@@ -26,6 +31,7 @@ class UserAdmin(BaseModelView, model=User):
         'display_name',
         'email',
         'anon_id',
+        'last_ip',
     ]
     column_sortable_list = [
         'uid',
@@ -33,6 +39,11 @@ class UserAdmin(BaseModelView, model=User):
         'display_name',
         'is_guest',
         'is_active',
+        'last_ip',
+        'last_country',
+        'last_city',
+        'last_ip_at',
+        'last_seen_at',
         'created_at',
     ]
     can_delete = False
@@ -47,6 +58,10 @@ class UserAdmin(BaseModelView, model=User):
         'avatar_url': 'Аватар URL',
         'avatar_mime': 'MIME аватара',
         'last_seen_at': 'Был в сети',
+        'last_ip': 'Последний IP',
+        'last_country': 'Страна',
+        'last_city': 'Город',
+        'last_ip_at': 'IP обновлён',
         'anon_id': 'Anon ID',
         'is_guest': 'Гость',
         'registered_at': 'Зарегистрирован',

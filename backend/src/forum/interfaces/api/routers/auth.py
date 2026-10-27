@@ -29,6 +29,7 @@ from forum.service_layer.auth_dep import (
     get_keycloak_client,
     token_is_admin,
 )
+from forum.service_layer.client_ip import resolve_client_ip
 from forum.service_layer.handlers.auth import (
     ensure_user_command_from_keycloak,
 )
@@ -130,6 +131,7 @@ async def _persist_user_from_tokens(
     id_token: str | None,
     message_bus: MessageBus,
     anon_id: str | None = None,
+    client_ip: str | None = None,
 ):
     """
     Upsert пользователя в БД по claims Keycloak.
@@ -144,6 +146,7 @@ async def _persist_user_from_tokens(
         id_token: OIDC id_token или None.
         message_bus: Depends MessageBus.
         anon_id: cookie гостя для merge или None.
+        client_ip: IP клиента для last_ip/geo.
 
     Returns:
         UserResponse с флагом is_admin по роли токена.
@@ -171,6 +174,7 @@ async def _persist_user_from_tokens(
     command = ensure_user_command_from_keycloak(
         user_info,
         anon_id=anon_id,
+        client_ip=client_ip,
     )
     user = await message_bus.handle(command)
     user.is_admin = token_is_admin(access_token)
@@ -262,6 +266,7 @@ async def auth_me(
         id_token=id_token,
         message_bus=message_bus,
         anon_id=read_anon_id(request),
+        client_ip=await resolve_client_ip(request),
     )
     finalize_guest_cookie_after_login(response)
     return AuthSessionResponse(
@@ -347,6 +352,7 @@ async def login_callback(
             id_token=id_token,
             message_bus=message_bus,
             anon_id=read_anon_id(request),
+            client_ip=await resolve_client_ip(request),
         )
 
         required_role = configuration.admin.required_role

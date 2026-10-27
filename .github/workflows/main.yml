@@ -1,0 +1,46 @@
+# Деплой app-стека на VPS при пуше в main.
+#
+# Secrets в GitHub → Settings → Secrets and variables → Actions:
+#   VPS_HOST         — IP или hostname сервера
+#   VPS_USER         — SSH-пользователь
+#   VPS_SSH_KEY      — приватный ключ (весь PEM, включая BEGIN/END)
+#   VPS_DEPLOY_PATH  — абсолютный путь к клону репо на сервере
+#                      (например /home/ubuntu/Forum)
+#
+# На VPS заранее: git clone, .env, docker network create forum_public_net,
+# ключ CI в ~/.ssh/authorized_keys.
+name: Deploy Forum app
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-forum-app-main
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          envs: DEPLOY_PATH
+          script: |
+            set -euo pipefail
+            cd "$DEPLOY_PATH"
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
+            docker compose -p forum-app \
+              -f docker-compose.app.prod.yaml \
+              up -d --build
+        env:
+          DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}

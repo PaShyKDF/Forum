@@ -23,6 +23,7 @@ from forum.service_layer.auth_dep import (
     get_forum_admin,
     get_optional_current_user,
 )
+from forum.service_layer.client_ip import resolve_client_ip
 from forum.service_layer.messagebus import MessageBus, get_message_bus
 from forum.service_layer.visitor_cookies import (
     read_anon_id,
@@ -76,6 +77,10 @@ async def get_home(
             anon_id=read_anon_id(request),
             user_agent=request.headers.get('user-agent'),
             is_authenticated=current_user is not None,
+            client_ip=await resolve_client_ip(request),
+            user_uid=(
+                current_user.uid if current_user else None
+            ),
         ),
     )
     if track_result.set_cookie and track_result.anon_id:

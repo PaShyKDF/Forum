@@ -37,6 +37,7 @@ def ensure_user_command_from_keycloak(
     user_info: dict,
     *,
     anon_id: str | None = None,
+    client_ip: str | None = None,
 ) -> commands.EnsureUserCommand:
     """
     Маппит Keycloak userinfo/JWT claims в EnsureUserCommand.
@@ -47,6 +48,7 @@ def ensure_user_command_from_keycloak(
     Args:
         user_info: Словарь claims (sub обязателен).
         anon_id: Cookie гостя для merge.
+        client_ip: IP клиента для last_ip/geo.
 
     Returns:
         EnsureUserCommand для MessageBus.
@@ -75,8 +77,8 @@ def ensure_user_command_from_keycloak(
         display_name=display_name,
         avatar_url=user_info.get('picture'),
         anon_id=anon_id,
+        client_ip=client_ip,
     )
-
 
 @log
 async def handle_ensure_user_command(

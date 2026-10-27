@@ -173,6 +173,8 @@ async def test_track_guest_visit_throttles_touch():
         is_guest=True,
         is_active=True,
         last_seen_at=now - timedelta(seconds=30),
+        last_ip=None,
+        last_country=None,
     )
     uow.user_repository.get_by_anon_id.return_value = guest
 
@@ -199,7 +201,7 @@ async def test_track_guest_visit_throttles_touch():
 
     assert result.anon_id == anon_id
     assert result.set_cookie is True
-    uow.user_repository.touch_last_seen.assert_not_called()
+    uow.user_repository.touch_presence.assert_not_called()
     uow.commit.assert_not_called()
 
 
@@ -213,6 +215,8 @@ async def test_track_guest_visit_touches_after_interval():  # noqa
         is_guest=True,
         is_active=True,
         last_seen_at=now - timedelta(seconds=400),
+        last_ip=None,
+        last_country=None,
     )
     uow.user_repository.get_by_anon_id.return_value = guest
 
@@ -226,6 +230,12 @@ async def test_track_guest_visit_touches_after_interval():  # noqa
             'forum.service_layer.handlers.visitors'
             '.configuration',
         ) as cfg,
+        patch(
+            'forum.service_layer.handlers.visitors'
+            '.lookup_geo',
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
     ):
         cfg.visitors.touch_interval_seconds = 300
         result = await handle_track_guest_visit_command(
@@ -238,7 +248,7 @@ async def test_track_guest_visit_touches_after_interval():  # noqa
         )
 
     assert result.anon_id == anon_id
-    uow.user_repository.touch_last_seen.assert_awaited_once()
+    uow.user_repository.touch_presence.assert_awaited_once()
     uow.commit.assert_awaited_once()
 
 
@@ -359,17 +369,22 @@ async def test_merge_deletes_guest_on_uid_conflict():  # noqa
     uow = _make_uow()
     uow.user_repository.get_by_id.return_value = existing
     uow.user_repository.get_by_anon_id.return_value = guest
-    uow.user_repository.touch_last_seen.return_value = (
+    uow.user_repository.touch_presence.return_value = (
         existing
     )
     delete_guest = uow.user_repository.delete_guest
     promote = uow.user_repository.promote_guest_to_registered
 
-    result = await merge_guest_on_login(
-        command,
-        uow,
-        anon_id=anon_id,
-    )
+    with patch(
+        'forum.service_layer.handlers.visitors.lookup_geo',
+        new_callable=AsyncMock,
+        return_value=None,
+    ):
+        result = await merge_guest_on_login(
+            command,
+            uow,
+            anon_id=anon_id,
+        )
 
     assert result.uid == keycloak_uid
     delete_guest.assert_awaited_once_with(anon_id)

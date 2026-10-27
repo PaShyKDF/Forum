@@ -16,3 +16,4 @@ class EnsureUserCommand(Command):
     avatar_url: str | None = None
     # Cookie гостя для merge при первом логине
     anon_id: str | None = None
+    client_ip: str | None = None
