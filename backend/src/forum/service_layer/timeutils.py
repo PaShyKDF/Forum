@@ -1,6 +1,6 @@
 """Хелперы времени: UTC в БД, Москва в UI."""
 
-from datetime import datetime, time, timezone
+from datetime import date, datetime, time, timezone
 from zoneinfo import ZoneInfo
 
 
@@ -15,6 +15,16 @@ def utc_now_naive() -> datetime:
         Naive datetime в UTC.
     """
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def moscow_today() -> date:
+    """
+    Текущая календарная дата по Москве.
+
+    Returns:
+        date в зоне Europe/Moscow.
+    """
+    return datetime.now(MSK).date()
 
 
 def moscow_today_start_utc() -> datetime:

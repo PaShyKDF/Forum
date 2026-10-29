@@ -1,4 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+)
 
 from forum.domain import commands
 from forum.domain.exceptions import DomainError
@@ -25,7 +32,15 @@ from forum.service_layer.auth_dep import (
     get_forum_admin,
     get_optional_current_user,
 )
+from forum.service_layer.handlers.visitors import (
+    _is_bot_user_agent,
+)
 from forum.service_layer.messagebus import MessageBus, get_message_bus
+from forum.service_layer.visitor_cookies import (
+    new_anon_id,
+    read_anon_id,
+    set_anon_cookie,
+)
 
 
 router = APIRouter(
@@ -110,6 +125,8 @@ async def get_topics(
 )
 async def get_topic_by_id(
     topic_id: int,
+    request: Request,
+    response: Response,
     page: int = Query(1, ge=1, description='Страница'),
     page_size: int | None = Query(
         None,
@@ -125,8 +142,13 @@ async def get_topic_by_id(
     """
     Возвращает тему и страницу корневых сообщений.
 
+    После проверки доступа считает просмотр
+    (1 зритель = 1 за московские сутки).
+
     Args:
         topic_id: ID темы.
+        request: HTTP-запрос (User-Agent, cookies).
+        response: ответ для Set-Cookie anon_id.
         page: номер страницы (с 1).
         page_size: размер страницы корней или None.
         current_user: текущий пользователь или None.
@@ -150,9 +172,33 @@ async def get_topic_by_id(
         ),
     )
     try:
-        return await message_bus.handle(command)
+        detail = await message_bus.handle(command)
     except DomainError as error:
         raise_http_from_domain(error)
+        raise
+
+    if not _is_bot_user_agent(
+        request.headers.get('user-agent'),
+    ):
+        user_uid = (
+            current_user.uid if current_user else None
+        )
+        anon_id = None
+        if user_uid is None:
+            anon_id = read_anon_id(request)
+            if anon_id is None:
+                anon_id = new_anon_id()
+                set_anon_cookie(response, anon_id)
+        recorded = await message_bus.handle(
+            commands.RecordTopicViewCommand(
+                topic_id=topic_id,
+                user_uid=user_uid,
+                anon_id=anon_id,
+            ),
+        )
+        if recorded:
+            detail.views_count += 1
+    return detail
 
 
 @router.patch(

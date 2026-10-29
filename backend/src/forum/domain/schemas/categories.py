@@ -69,6 +69,10 @@ class TopicSummaryResponse(BaseSchema):
         ...,
         description='Число сообщений',
     )
+    views_count: int = Field(
+        0,
+        description='Просмотры',
+    )
     last_post: LastPostResponse | None = Field(
         None,
         description='Последнее сообщение',

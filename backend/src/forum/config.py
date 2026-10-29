@@ -495,6 +495,56 @@ class NotificationsCleanupConfig:
 
 
 @dataclass
+class TopicViewsConfig:
+    """Хранение и очистка ежедневных просмотров тем."""
+
+    # Сколько суток МСК хранить, включая сегодня
+    retention_days: int = env.int(
+        'FORUM_TOPIC_VIEWS_RETENTION_DAYS',
+        30,
+    )
+    cleanup_enabled: bool = env.bool(
+        'FORUM_TOPIC_VIEWS_CLEANUP_ENABLED',
+        True,
+    )
+    # Cron TaskIQ (UTC). 30 0 * * * = 00:30 UTC
+    cleanup_cron: str = env(
+        'FORUM_TOPIC_VIEWS_CLEANUP_CRON',
+        '30 0 * * *',
+    )
+    cleanup_batch_size: int = env.int(
+        'FORUM_TOPIC_VIEWS_CLEANUP_BATCH_SIZE',
+        500,
+    )
+    cleanup_max_batches: int = env.int(
+        'FORUM_TOPIC_VIEWS_CLEANUP_MAX_BATCHES',
+        1000,
+    )
+
+    def __post_init__(self):
+        if self.retention_days < 1:
+            raise ValueError(
+                'FORUM_TOPIC_VIEWS_RETENTION_DAYS '
+                'должен быть >= 1',
+            )
+        if self.cleanup_batch_size < 1:
+            raise ValueError(
+                'FORUM_TOPIC_VIEWS_CLEANUP_BATCH_SIZE '
+                'должен быть >= 1',
+            )
+        if self.cleanup_max_batches < 1:
+            raise ValueError(
+                'FORUM_TOPIC_VIEWS_CLEANUP_MAX_BATCHES '
+                'должен быть >= 1',
+            )
+        if not (self.cleanup_cron or '').strip():
+            raise ValueError(
+                'FORUM_TOPIC_VIEWS_CLEANUP_CRON '
+                'не может быть пустым',
+            )
+
+
+@dataclass
 class Configuration:
     """Корневая конфигурация форума."""
 
@@ -523,6 +573,9 @@ class Configuration:
         field(
             default_factory=NotificationsCleanupConfig,
         )
+    )
+    topic_views: TopicViewsConfig = field(
+        default_factory=TopicViewsConfig,
     )
 
 

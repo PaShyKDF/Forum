@@ -81,6 +81,11 @@ function topicRow(item) {
       showStats
         ? `<dl class="topic-row__stat"><dt>Темы</dt><dd>${format(item.topics)}</dd></dl>
     <dl class="topic-row__stat"><dt>Сообщения</dt><dd>${format(item.posts)}</dd></dl>
+    ${
+      item.isTopic
+        ? `<dl class="topic-row__stat topic-row__stat--views"><dt>Просмотры</dt><dd>${format(item.views)}</dd></dl>`
+        : ''
+    }
     <div class="last-post">
       <span>Последнее сообщение</span>
       <a href="${lastPostHref}">${escapeHtml(item.lastPost?.title || '—')}</a>
@@ -621,7 +626,7 @@ export const topicTemplate = (
 };
 
 export const listTemplate = (title, items) =>
-  `<div class="breadcrumbs"><a href="#/">Форум</a><span>›</span><b>${escapeHtml(title)}</b></div><section class="category-section standalone"><div class="category-heading"><h1>${escapeHtml(title)}</h1><span class="category-heading__topics">Темы</span><span class="category-heading__posts">Сообщения</span><span>Последнее сообщение</span></div><div class="topic-table">${items.map(topicRow).join('')}</div></section>`;
+  `<div class="breadcrumbs"><a href="#/">Форум</a><span>›</span><b>${escapeHtml(title)}</b></div><section class="category-section standalone category-section--with-views"><div class="category-heading"><h1>${escapeHtml(title)}</h1><span class="category-heading__topics">Темы</span><span class="category-heading__posts">Сообщения</span><span class="category-heading__views">Просмотры</span><span>Последнее сообщение</span></div><div class="topic-table">${items.map(topicRow).join('')}</div></section>`;
 
 export const forumTemplate = (
   forum,
@@ -729,7 +734,7 @@ export const forumTemplate = (
         isRestricted: forum.isRestricted,
       })
     : '';
-  return `<div class="breadcrumbs"><a href="#/">Форум</a><span>›</span>${sectionCrumb}<b>${escapeHtml(forum.title)}</b></div><section class="category-section standalone category-section--topics" data-forum-page data-category-id="${forum.id}" data-category-restricted="${forum.isRestricted ? '1' : '0'}"><div class="category-heading"><h1>${titleHtml}</h1><span class="category-heading__topics">Темы</span><span class="category-heading__posts">Сообщения</span><span>Последнее сообщение</span></div>${meta}${aclBlock}${newTopicForm}<div class="topic-table">${forum.topicList.length ? forum.topicList.map(topicRow).join('') : '<p class="replies__empty">В этой категории пока нет тем</p>'}</div></section>`;
+  return `<div class="breadcrumbs"><a href="#/">Форум</a><span>›</span>${sectionCrumb}<b>${escapeHtml(forum.title)}</b></div><section class="category-section standalone category-section--topics category-section--with-views" data-forum-page data-category-id="${forum.id}" data-category-restricted="${forum.isRestricted ? '1' : '0'}"><div class="category-heading"><h1>${titleHtml}</h1><span class="category-heading__topics">Темы</span><span class="category-heading__posts">Сообщения</span><span class="category-heading__views">Просмотры</span><span>Последнее сообщение</span></div>${meta}${aclBlock}${newTopicForm}<div class="topic-table">${forum.topicList.length ? forum.topicList.map(topicRow).join('') : '<p class="replies__empty">В этой категории пока нет тем</p>'}</div></section>`;
 };
 
 export const profileTemplate = (profile) => {

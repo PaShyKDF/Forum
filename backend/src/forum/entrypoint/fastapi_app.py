@@ -18,6 +18,7 @@ from forum.interfaces.admin.views import (
     SupportTicketAdmin,
     TopicAdmin,
     TopicNotificationAdmin,
+    TopicViewAdmin,
     UserAdmin,
 )
 from forum.interfaces.api.routers import (
@@ -97,6 +98,7 @@ admin = RuAdmin(
 admin.add_view(SectionAdmin)
 admin.add_view(CategoryAdmin)
 admin.add_view(TopicAdmin)
+admin.add_view(TopicViewAdmin)
 admin.add_view(PostAdmin)
 admin.add_view(UserAdmin)
 admin.add_view(DirectChatAdmin)

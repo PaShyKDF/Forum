@@ -122,6 +122,7 @@ def build_topic_summary(
         ),
         can_manage=False,
         posts_count=posts_count,
+        views_count=topic.views_count,
         last_post=build_last_post(topic, last_post),
     )
 

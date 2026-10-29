@@ -22,6 +22,7 @@ from .notifications import TopicNotification
 from .posts import Post
 from .sections import Section
 from .support import SupportTicket
+from .topic_views import TopicView
 from .topics import Topic
 from .users import User
 
@@ -45,6 +46,7 @@ __all__ = [
     'Topic',
     'TopicNotification',
     'TopicUserAccess',
+    'TopicView',
     'UpdatedAtMixin',
     'User',
 ]

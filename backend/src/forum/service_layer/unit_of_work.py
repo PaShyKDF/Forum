@@ -23,6 +23,7 @@ from forum.adapters.repositories import (
     SupportTicketRepository,
     TopicNotificationRepository,
     TopicRepository,
+    TopicViewRepository,
     UserRepository,
 )
 from forum.config import configuration
@@ -70,6 +71,7 @@ class AbstractUnitOfWork(ABC):
     chat_message_repository: DirectMessageRepository
     support_ticket_repository: SupportTicketRepository
     notification_repository: TopicNotificationRepository
+    topic_view_repository: TopicViewRepository
 
     @abstractmethod
     async def __aenter__(self) -> Self:
@@ -207,6 +209,9 @@ class UnitOfWork(AbstractUnitOfWork):
         )
         self.notification_repository = (
             TopicNotificationRepository(self.session)
+        )
+        self.topic_view_repository = TopicViewRepository(
+            self.session,
         )
         return self
 

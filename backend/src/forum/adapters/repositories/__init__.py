@@ -10,6 +10,7 @@ from .notifications import TopicNotificationRepository
 from .posts import PostRepository
 from .sections import SectionRepository
 from .support import SupportTicketRepository
+from .topic_views import TopicViewRepository
 from .topics import TopicRepository
 from .users import UserRepository
 
@@ -24,5 +25,6 @@ __all__ = [
     'SupportTicketRepository',
     'TopicNotificationRepository',
     'TopicRepository',
+    'TopicViewRepository',
     'UserRepository',
 ]

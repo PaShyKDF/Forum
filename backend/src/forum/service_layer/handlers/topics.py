@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import uuid
 
 from general.logger import log, logger
 
@@ -39,6 +40,31 @@ from forum.service_layer.handlers.topic_summaries import (
 from forum.service_layer.message_body import (
     prepare_message_body,
 )
+from forum.service_layer.timeutils import (
+    moscow_today,
+    utc_now_naive,
+)
+
+
+def _viewer_key(
+    user_uid: uuid.UUID | None,
+    anon_id: str | None,
+) -> str | None:
+    """
+    Собирает ключ зрителя для дедупликации просмотров.
+
+    Args:
+        user_uid: uid авторизованного или None.
+        anon_id: cookie гостя или None.
+
+    Returns:
+        u:<uid>, a:<anon_id> или None без идентификатора.
+    """
+    if user_uid is not None:
+        return f'u:{user_uid}'
+    if anon_id:
+        return f'a:{anon_id}'
+    return None
 
 
 def _require_title(title: str) -> str:
@@ -347,3 +373,46 @@ async def handle_create_topic_command(
         title=topic.title,
         category_id=topic.category_id,
     )
+
+
+@log
+async def handle_record_topic_view_command(
+    command: commands.RecordTopicViewCommand,
+    uow: unit_of_work.AbstractUnitOfWork,
+) -> bool:
+    """
+    Засчитывает первый просмотр темы зрителем за сутки.
+
+    Собирает viewer_key, пишет topic_view и при новой
+    записи увеличивает Topic.views_count.
+
+    Args:
+        command: topic_id, user_uid и/или anon_id.
+        uow: Unit of Work текущего запроса.
+
+    Returns:
+        True, если просмотр засчитан впервые за день.
+    """
+    viewer_key = _viewer_key(
+        command.user_uid,
+        command.anon_id,
+    )
+    if viewer_key is None:
+        return False
+
+    recorded = (
+        await uow.topic_view_repository.record_daily_view(
+            topic_id=command.topic_id,
+            viewer_key=viewer_key,
+            user_id=command.user_uid,
+            anon_id=(
+                None
+                if command.user_uid is not None
+                else command.anon_id
+            ),
+            view_date=moscow_today(),
+            viewed_at=utc_now_naive(),
+        )
+    )
+    await uow.commit()
+    return recorded

@@ -55,6 +55,7 @@ from forum.service_layer.handlers.topics import (
     handle_create_topic_command,
     handle_get_topic_by_id_command,
     handle_get_topics_command,
+    handle_record_topic_view_command,
     handle_update_topic_title_command,
 )
 from forum.service_layer.handlers.users import (
@@ -120,6 +121,9 @@ def get_command_handlers() -> dict[
         commands.GetTopicsCommand: handle_get_topics_command,
         commands.GetTopicByIdCommand: (
             handle_get_topic_by_id_command
+        ),
+        commands.RecordTopicViewCommand: (
+            handle_record_topic_view_command
         ),
         commands.CreateTopicCommand: (
             handle_create_topic_command

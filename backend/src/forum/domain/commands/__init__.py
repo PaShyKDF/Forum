@@ -44,6 +44,7 @@ from .topics import (
     CreateTopicCommand,
     GetTopicByIdCommand,
     GetTopicsCommand,
+    RecordTopicViewCommand,
     UpdateTopicTitleCommand,
 )
 from .users import (
@@ -86,6 +87,7 @@ __all__ = [
     'GetTopicMembersCommand',
     'GetTopicPostsCommand',
     'GetTopicsCommand',
+    'RecordTopicViewCommand',
     'GetCurrentUserProfileCommand',
     'GetPublicUserProfileCommand',
     'GetUnreadChatCountCommand',

@@ -32,6 +32,7 @@ const mapTopicRow = (topic) => ({
   description: topic.description || '',
   topics: 1,
   posts: topic.posts_count ?? 0,
+  views: topic.views_count ?? 0,
   position: topic.position ?? 99,
   isTopic: true,
   isRestricted: Boolean(topic.is_restricted),

@@ -49,3 +49,12 @@ class UpdateTopicTitleCommand(Command):
     author_id: uuid.UUID
     title: str
     is_admin: bool = False
+
+
+@dataclass
+class RecordTopicViewCommand(Command):
+    """Засчитать просмотр темы зрителем за сутки."""
+
+    topic_id: int
+    user_uid: uuid.UUID | None = None
+    anon_id: str | None = None
