@@ -1,14 +1,15 @@
 """Тесты трекинга гостей и merge при логине."""
 
+import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
-import uuid
 
 import pytest
 
-from pathlib import Path
-
+from forum.adapters.repositories.users import UserRepository
 from forum.domain.commands.auth import EnsureUserCommand
 from forum.domain.commands.visitors import TrackGuestVisitCommand
 from forum.service_layer.handlers.visitors import (
@@ -17,11 +18,15 @@ from forum.service_layer.handlers.visitors import (
     handle_track_guest_visit_command,
     merge_guest_on_login,
 )
+from forum.service_layer.tasks.visitors import (
+    cleanup_stale_guests_core,
+)
 from forum.service_layer.visitor_cookies import (
     ANON_COOKIE_NAME,
     new_anon_id,
     read_anon_id,
 )
+
 
 _CATEGORIES_ROUTER = (
     Path(__file__).resolve().parents[1]
@@ -472,3 +477,51 @@ def test_promote_expire_all_is_sync():
     assert 'await self.session.expire_all()' not in source
     assert 'self.session.expire_all()' in source
     assert 'self.session.expunge(guest)' in source
+
+
+@pytest.mark.asyncio
+async def test_delete_stale_guests_batch_returns_rowcount():
+    session = AsyncMock()
+    session.execute = AsyncMock(
+        return_value=SimpleNamespace(rowcount=4),
+    )
+    session.flush = AsyncMock()
+    repo = UserRepository(session)
+    deleted = await repo.delete_stale_guests_batch(
+        older_than=datetime(2026, 1, 1),
+        limit=10,
+    )
+    assert deleted == 4
+    session.execute.assert_awaited()
+    session.flush.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_cleanup_stale_guests_core_batches():
+    calls = {'n': 0}
+
+    @asynccontextmanager
+    async def factory():
+        uow = AsyncMock()
+        calls['n'] += 1
+        if calls['n'] == 1:
+            deleted = 3
+        elif calls['n'] == 2:
+            deleted = 2
+        else:
+            deleted = 0
+        uow.user_repository.delete_stale_guests_batch = (
+            AsyncMock(return_value=deleted)
+        )
+        uow.commit = AsyncMock()
+        yield uow
+
+    result = await cleanup_stale_guests_core(
+        factory,
+        retention_days=7,
+        batch_size=3,
+        max_batches=10,
+    )
+    assert result.deleted_count == 5
+    assert result.batches_count == 2
+    assert result.errors_count == 0

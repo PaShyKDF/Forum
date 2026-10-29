@@ -22,6 +22,7 @@ taskiq worker --no-configure-logging \
     --fs-discover \
     forum.entrypoint.taskiq_app:taskiq_broker \
     forum.service_layer.tasks.example \
-    forum.service_layer.tasks.notifications
+    forum.service_layer.tasks.notifications \
+    forum.service_layer.tasks.visitors
 
 echo "Воркер Taskiq остановлен"

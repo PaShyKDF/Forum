@@ -3,10 +3,9 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from general.logger import logger
-
 from forum.config import configuration, taskiq_broker
 from forum.service_layer.unit_of_work import UnitOfWork
+from general.logger import logger
 
 
 @dataclass(frozen=True)
@@ -102,8 +101,10 @@ async def cleanup_inactive_notifications_core(
 @taskiq_broker.task(
     schedule=[
         {
-            # Каждый день в 03:00
-            'cron': '0 3 * * *',
+            'cron': (
+                configuration.notifications_cleanup
+                .cleanup_cron
+            ),
             'args': [],
         }
     ],
@@ -112,8 +113,8 @@ async def cleanup_inactive_notifications() -> None:
     """
     TaskIQ-задача периодической очистки уведомлений.
 
-    Запускается по cron (ежедневно в 03:00). При
-    disabled в конфиге сразу выходит без работы.
+    Cron из FORUM_NOTIFICATIONS_CLEANUP_CRON (UTC).
+    При disabled в конфиге сразу выходит без работы.
     """
     if not configuration.notifications_cleanup.enabled:
         logger.debug(

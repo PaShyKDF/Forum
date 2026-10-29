@@ -397,6 +397,29 @@ class VisitorsConfig:
         'FORUM_VISITORS_USE_EGRESS_IP_WHEN_PRIVATE',
         env('FORUM_MODE', 'DEV') == 'DEV',
     )
+    # Периодическая очистка устаревших гостей (TaskIQ)
+    cleanup_enabled: bool = env.bool(
+        'FORUM_VISITORS_CLEANUP_ENABLED',
+        True,
+    )
+    # Сколько дней без активности хранить гостя
+    cleanup_retention_days: int = env.int(
+        'FORUM_VISITORS_CLEANUP_RETENTION_DAYS',
+        7,
+    )
+    # Cron TaskIQ (UTC). 0 0 * * * = 03:00 МСК
+    cleanup_cron: str = env(
+        'FORUM_VISITORS_CLEANUP_CRON',
+        '0 0 * * *',
+    )
+    cleanup_batch_size: int = env.int(
+        'FORUM_VISITORS_CLEANUP_BATCH_SIZE',
+        500,
+    )
+    cleanup_max_batches: int = env.int(
+        'FORUM_VISITORS_CLEANUP_MAX_BATCHES',
+        1000,
+    )
 
     def __post_init__(self):
         if self.touch_interval_seconds < 1:
@@ -408,6 +431,26 @@ class VisitorsConfig:
             raise ValueError(
                 'FORUM_VISITOR_ANON_COOKIE_MAX_AGE '
                 'должен быть >= 60',
+            )
+        if self.cleanup_retention_days < 1:
+            raise ValueError(
+                'FORUM_VISITORS_CLEANUP_RETENTION_DAYS '
+                'должен быть >= 1',
+            )
+        if self.cleanup_batch_size < 1:
+            raise ValueError(
+                'FORUM_VISITORS_CLEANUP_BATCH_SIZE '
+                'должен быть >= 1',
+            )
+        if self.cleanup_max_batches < 1:
+            raise ValueError(
+                'FORUM_VISITORS_CLEANUP_MAX_BATCHES '
+                'должен быть >= 1',
+            )
+        if not (self.cleanup_cron or '').strip():
+            raise ValueError(
+                'FORUM_VISITORS_CLEANUP_CRON '
+                'не может быть пустым',
             )
 
 
@@ -427,6 +470,11 @@ class NotificationsCleanupConfig:
         'FORUM_NOTIFICATIONS_CLEANUP_MAX_BATCHES',
         1000,
     )
+    # Cron TaskIQ (UTC). По умолчанию 03:00 UTC
+    cleanup_cron: str = env(
+        'FORUM_NOTIFICATIONS_CLEANUP_CRON',
+        '0 3 * * *',
+    )
 
     def __post_init__(self):
         if self.batch_size < 1:
@@ -438,6 +486,11 @@ class NotificationsCleanupConfig:
             raise ValueError(
                 'FORUM_NOTIFICATIONS_CLEANUP_MAX_BATCHES '
                 'должен быть >= 1',
+            )
+        if not (self.cleanup_cron or '').strip():
+            raise ValueError(
+                'FORUM_NOTIFICATIONS_CLEANUP_CRON '
+                'не может быть пустым',
             )
 
 

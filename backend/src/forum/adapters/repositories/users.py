@@ -341,6 +341,42 @@ class UserRepository(SQLAlchemyRepository[User, uuid.UUID]):
         await self.session.flush()
         return True
 
+    async def delete_stale_guests_batch(
+        self,
+        *,
+        older_than: datetime,
+        limit: int = 500,
+    ) -> int:
+        """
+        Удаляет пачку устаревших гостевых записей.
+
+        Берёт is_guest=True, у которых coalesce(last_seen_at,
+        created_at) строго раньше older_than.
+
+        Args:
+            older_than: порог активности (UTC naive).
+            limit: размер пачки.
+
+        Returns:
+            Число удалённых строк.
+        """
+        activity = func.coalesce(
+            User.last_seen_at,
+            User.created_at,
+        )
+        ids_stmt = (
+            select(User.uid)
+            .where(
+                User.is_guest.is_(True),
+                activity < older_than,
+            )
+            .limit(limit)
+        )
+        stmt = delete(User).where(User.uid.in_(ids_stmt))
+        result = await self.session.execute(stmt)
+        await self.session.flush()
+        return int(result.rowcount or 0)
+
     async def promote_guest_to_registered(
         self,
         *,
