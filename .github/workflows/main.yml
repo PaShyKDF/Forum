@@ -46,6 +46,9 @@ jobs:
             git reset --hard origin/main
             docker compose -p forum-app \
               -f docker-compose.app.prod.yaml \
+              stop
+            docker compose -p forum-app \
+              -f docker-compose.app.prod.yaml \
               up -d --build
         env:
           DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}

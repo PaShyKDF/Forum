@@ -29,6 +29,7 @@ services:
   db:
     env_file: .env
     image: postgres:16
+    pull_policy: missing
     restart: unless-stopped
     volumes:
       - pg_data:/var/lib/postgresql/data
@@ -59,6 +60,7 @@ services:
 
   redis:
     image: redis:7
+    pull_policy: missing
     restart: unless-stopped
     command: ['redis-server', '--requirepass', '${FORUM_REDIS_CACHE_PASSWORD}']
     ports:
@@ -79,6 +81,7 @@ services:
     build:
       context: .
       dockerfile: backend/src/forum/infrastructure/Dockerfile
+      pull: false
     env_file: .env
     restart: unless-stopped
     ports:
@@ -103,6 +106,7 @@ services:
     build:
       context: .
       dockerfile: backend/src/forum/infrastructure/Dockerfile
+      pull: false
     env_file: .env
     restart: unless-stopped
     depends_on:
@@ -125,6 +129,7 @@ services:
     build:
       context: .
       dockerfile: backend/src/forum/infrastructure/Dockerfile
+      pull: false
     env_file: .env
     restart: unless-stopped
     depends_on:
@@ -145,6 +150,7 @@ services:
 
   frontend:
     image: nginx:1.27-alpine
+    pull_policy: missing
     restart: unless-stopped
     ports:
       - '${FORUM_FRONTEND_HOST_PORT}:80'
