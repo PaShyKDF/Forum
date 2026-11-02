@@ -166,9 +166,49 @@ function newCategoryFormMarkup(sectionId) {
     </form>`;
 }
 
-function sectionAdminToolsMarkup(sectionId) {
+function sectionPositionControlsMarkup(section) {
+  const transferLabel = section.isTopic
+    ? 'В обычные'
+    : 'В специальные';
+  const transferTarget = section.isTopic ? '0' : '1';
+  return `<form
+      class="section-position-form"
+      data-section-position-form
+      data-section-id="${section.id}"
+    >
+      <label class="section-position-form__field">
+        <span>Позиция</span>
+        <input
+          type="number"
+          name="position"
+          min="1"
+          step="1"
+          required
+          value="${Number(section.position) || 1}"
+        >
+      </label>
+      <button class="button button--soft" type="submit">
+        Сохранить
+      </button>
+      <button
+        type="button"
+        class="button button--soft"
+        data-action="transfer-section"
+        data-section-id="${section.id}"
+        data-is-topic="${transferTarget}"
+      >${transferLabel}</button>
+      <p class="compose__error" data-error hidden></p>
+    </form>`;
+}
+
+function sectionAdminToolsMarkup(section, { showPosition = false } = {}) {
+  const positionControls = showPosition
+    ? sectionPositionControlsMarkup(section)
+    : '';
   return `<div class="section-admin-toolbar">
-      <div class="section-admin-toolbar__spacer" aria-hidden="true"></div>
+      <div class="section-admin-toolbar__manage">
+        ${positionControls}
+      </div>
       <div class="section-admin-toolbar__spacer" aria-hidden="true"></div>
       <div class="section-admin-toolbar__spacer" aria-hidden="true"></div>
       <div class="section-admin-toolbar__action">
@@ -179,7 +219,54 @@ function sectionAdminToolsMarkup(sectionId) {
         >Новая категория</button>
       </div>
     </div>
-    ${newCategoryFormMarkup(sectionId)}`;
+    ${newCategoryFormMarkup(section.id)}`;
+}
+
+function newSectionFormMarkup() {
+  return `<form
+      class="compose new-section-form"
+      data-new-section-form
+    >
+      <label class="compose__field">
+        <span class="compose__label">Название раздела</span>
+        <input
+          type="text"
+          name="title"
+          required
+          maxlength="200"
+          placeholder="Название раздела"
+        >
+      </label>
+      <label class="acl-toggle">
+        <input
+          type="checkbox"
+          name="is_topic"
+        >
+        <span>Специальный раздел</span>
+      </label>
+      <div class="compose__actions">
+        <button class="button" type="submit">
+          Создать раздел
+        </button>
+        <button
+          class="button button--soft"
+          type="button"
+          data-action="cancel-new-section"
+        >Отмена</button>
+      </div>
+      <p class="compose__error" data-error hidden></p>
+    </form>`;
+}
+
+function homeAdminToolsMarkup() {
+  return `<div class="home-admin-toolbar">
+      <button
+        type="button"
+        class="button"
+        data-action="open-new-section"
+      >Новый раздел</button>
+    </div>
+    ${newSectionFormMarkup()}`;
 }
 
 function categorySectionBlock(section, { isAdmin = false } = {}) {
@@ -191,7 +278,7 @@ function categorySectionBlock(section, { isAdmin = false } = {}) {
     }),
   );
   const adminTools = isAdmin
-    ? sectionAdminToolsMarkup(section.id)
+    ? sectionAdminToolsMarkup(section, { showPosition: true })
     : '';
   return `<section
     class="category-section ${section.isTopic ? 'category-section--featured' : ''}"
@@ -395,7 +482,8 @@ export const homeTemplate = (
   const participatedLink = isAuthenticated
     ? '<a href="#/participated">◯ <span><b>С вашим участием</b><small>темы с вашими сообщениями</small></span><em>→</em></a>'
     : '';
-  return `<section class="hero"><div><p class="eyebrow">Сообщество для вдумчивого диалога</p><h1>Пространство, где<br>можно <em>быть собой</em></h1><p class="hero__text">Исследуем жизнь, отношения и внутренние перемены — бережно, с уважением к разному опыту.</p><a href="${discussionsHref}" class="button">Перейти к обсуждениям <span>→</span></a></div><div class="hero__aside"><span class="hero__leaf">❋</span><strong>${members}</strong><small>участников сообщества</small><hr><p>Сегодня на форуме<br><b>${todayActive} человек</b></p></div></section><section class="quick-links" aria-label="Быстрая навигация"><a href="#/active">◷ <span><b>Активные темы</b><small>обсуждают сейчас</small></span><em>→</em></a>${participatedLink}</section>${sectionsGroup('Специальные разделы', special, { isAdmin })}${sectionsGroup('Разделы форума', regular, { isAdmin })}`;
+  const adminTools = isAdmin ? homeAdminToolsMarkup() : '';
+  return `<section class="hero"><div><p class="eyebrow">Сообщество для вдумчивого диалога</p><h1>Пространство, где<br>можно <em>быть собой</em></h1><p class="hero__text">Исследуем жизнь, отношения и внутренние перемены — бережно, с уважением к разному опыту.</p><a href="${discussionsHref}" class="button">Перейти к обсуждениям <span>→</span></a></div><div class="hero__aside"><span class="hero__leaf">❋</span><strong>${members}</strong><small>участников сообщества</small><hr><p>Сегодня на форуме<br><b>${todayActive} человек</b></p></div></section><section class="quick-links" aria-label="Быстрая навигация"><a href="#/active">◷ <span><b>Активные темы</b><small>обсуждают сейчас</small></span><em>→</em></a>${participatedLink}</section>${adminTools}${sectionsGroup('Специальные разделы', special, { isAdmin })}${sectionsGroup('Разделы форума', regular, { isAdmin })}`;
 };
 
 export const sectionTemplate = (
@@ -410,7 +498,7 @@ export const sectionTemplate = (
     }),
   );
   const adminTools = isAdmin
-    ? sectionAdminToolsMarkup(section.id)
+    ? sectionAdminToolsMarkup(section, { showPosition: false })
     : '';
   return `<div class="breadcrumbs">
       <a href="#/">Форум</a><span>›</span>

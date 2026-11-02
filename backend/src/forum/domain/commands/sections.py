@@ -20,3 +20,22 @@ class GetSectionByIdCommand(Command):
     section_id: int
     current_user_uid: uuid.UUID | None = None
     is_admin: bool = False
+
+
+@dataclass
+class CreateSectionCommand(Command):
+    """Создать раздел (только админ)."""
+
+    title: str
+    is_topic: bool = False
+    is_admin: bool = False
+
+
+@dataclass
+class UpdateSectionCommand(Command):
+    """Обновить позицию или шкалу раздела (админ)."""
+
+    section_id: int
+    position: int | None = None
+    is_topic: bool | None = None
+    is_admin: bool = False

@@ -1178,6 +1178,19 @@ function setNewCategoryFormVisible(form, visible) {
   }
 }
 
+function setNewSectionFormVisible(form, visible) {
+  if (!form) {
+    return;
+  }
+  form.classList.toggle('is-open', visible);
+  if (visible) {
+    form.querySelector('[name="title"]')?.focus();
+    return;
+  }
+  form.reset();
+  showError(form, '');
+}
+
 function findDraftAclForm(node) {
   return (
     node?.closest('[data-new-topic-form]')
@@ -1382,6 +1395,38 @@ async function handleForumClick(event) {
     setNewCategoryFormVisible(form, false);
     return;
   }
+  if (action === 'open-new-section') {
+    if (!currentUser?.is_admin) {
+      return;
+    }
+    const form = document.querySelector(
+      '[data-new-section-form]',
+    );
+    setNewSectionFormVisible(form, true);
+    return;
+  }
+  if (action === 'cancel-new-section') {
+    const form = actionBtn.closest('[data-new-section-form]');
+    setNewSectionFormVisible(form, false);
+    return;
+  }
+  if (action === 'transfer-section') {
+    if (!currentUser?.is_admin) {
+      return;
+    }
+    const sectionId = Number(actionBtn.dataset.sectionId);
+    const isTopic = actionBtn.dataset.isTopic === '1';
+    actionBtn.disabled = true;
+    try {
+      await forumApi.updateSection(sectionId, { isTopic });
+      await render();
+    } catch (error) {
+      window.alert(error.message);
+    } finally {
+      actionBtn.disabled = false;
+    }
+    return;
+  }
   if (action === 'toggle-category-visibility' && forumPage) {
     const categoryId = Number(forumPage.dataset.categoryId);
     const currentlyRestricted =
@@ -1564,7 +1609,7 @@ async function handleNewCategorySubmit(event) {
   );
   const allowedUserUids = getDraftMemberUids(
     form.querySelector('[data-new-category-members]')
-      || form,
+    || form,
   );
   const submitBtn = form.querySelector(
     'button[type="submit"]',
@@ -1583,6 +1628,84 @@ async function handleNewCategorySubmit(event) {
       },
     );
     location.hash = `#/forum/${created.id}`;
+  } catch (error) {
+    showError(form, error.message);
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+    }
+  }
+}
+
+async function handleNewSectionSubmit(event) {
+  const form = event.target.closest(
+    '[data-new-section-form]',
+  );
+  if (!form) {
+    return;
+  }
+  event.preventDefault();
+  if (!currentUser?.is_admin) {
+    return;
+  }
+  const title =
+    form.querySelector('[name="title"]')?.value?.trim()
+    || '';
+  if (!title) {
+    showError(form, 'Введите название раздела');
+    return;
+  }
+  const isTopic = Boolean(
+    form.querySelector('[name="is_topic"]')?.checked,
+  );
+  const submitBtn = form.querySelector(
+    'button[type="submit"]',
+  );
+  if (submitBtn) {
+    submitBtn.disabled = true;
+  }
+  try {
+    await forumApi.createSection({ title, isTopic });
+    setNewSectionFormVisible(form, false);
+    await render();
+  } catch (error) {
+    showError(form, error.message);
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+    }
+  }
+}
+
+async function handleSectionPositionSubmit(event) {
+  const form = event.target.closest(
+    '[data-section-position-form]',
+  );
+  if (!form) {
+    return;
+  }
+  event.preventDefault();
+  if (!currentUser?.is_admin) {
+    return;
+  }
+  const sectionId = Number(form.dataset.sectionId);
+  const positionRaw = form.querySelector(
+    '[name="position"]',
+  )?.value;
+  const position = Number(positionRaw);
+  if (!Number.isInteger(position) || position < 1) {
+    showError(form, 'Введите целое число >= 1');
+    return;
+  }
+  const submitBtn = form.querySelector(
+    'button[type="submit"]',
+  );
+  if (submitBtn) {
+    submitBtn.disabled = true;
+  }
+  try {
+    await forumApi.updateSection(sectionId, { position });
+    await render();
   } catch (error) {
     showError(form, error.message);
   } finally {
@@ -2447,6 +2570,8 @@ app.addEventListener('submit', (event) => {
   void handleTopicSubmit(event);
   void handleForumSubmit(event);
   void handleNewCategorySubmit(event);
+  void handleNewSectionSubmit(event);
+  void handleSectionPositionSubmit(event);
   void handleProfileSubmit(event);
   void handleChatSubmit(event);
   void handleSupportSubmit(event);

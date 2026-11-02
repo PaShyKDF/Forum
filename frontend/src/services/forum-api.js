@@ -386,6 +386,33 @@ export const forumApi = {
     );
   },
 
+  async createSection({ title, isTopic = false }) {
+    return request('/api/sections', {
+      method: 'POST',
+      body: JSON.stringify({
+        title,
+        is_topic: Boolean(isTopic),
+      }),
+    });
+  },
+
+  async updateSection(
+    sectionId,
+    { position, isTopic } = {},
+  ) {
+    const payload = {};
+    if (position !== undefined) {
+      payload.position = Number(position);
+    }
+    if (isTopic !== undefined) {
+      payload.is_topic = Boolean(isTopic);
+    }
+    return request(`/api/sections/${sectionId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
   async searchUsers(query = '', limit = 30) {
     const params = new URLSearchParams();
     params.set('q', query || '');

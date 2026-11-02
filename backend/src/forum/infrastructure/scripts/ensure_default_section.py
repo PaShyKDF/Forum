@@ -7,7 +7,27 @@ from sqlalchemy import text
 from forum.domain.models import Section
 from forum.service_layer.unit_of_work import UnitOfWork
 
+
 DEFAULT_SECTION_TITLE = 'Общий'
+
+
+async def _bump_zero_positions(uow: UnitOfWork) -> None:
+    """
+    Убирает позицию 0: сдвигает шкалу на +1.
+
+    Args:
+        uow: открытый Unit of Work.
+    """
+    for is_topic in (False, True):
+        zero = await uow.section_repository.get_by_position(
+            is_topic=is_topic,
+            position=0,
+        )
+        if zero is not None:
+            await uow.section_repository.shift_positions_up(
+                is_topic=is_topic,
+                from_position=0,
+            )
 
 
 async def ensure_default_section() -> None:
@@ -22,13 +42,15 @@ async def ensure_default_section() -> None:
             print('Таблица section ещё нет, пропуск')
             return
 
+        await _bump_zero_positions(uow)
+
         section = await uow.section_repository.get_by_title(
             DEFAULT_SECTION_TITLE,
         )
         if section is None:
             section = Section(
                 title=DEFAULT_SECTION_TITLE,
-                position=0,
+                position=1,
                 is_topic=False,
                 is_active=True,
             )

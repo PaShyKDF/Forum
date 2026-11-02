@@ -200,6 +200,21 @@ class CategoryTitleExistsError(DomainError):
         )
 
 
+class SectionTitleExistsError(DomainError):
+    """
+    Раздел с таким названием уже существует.
+
+    title — конфликтующее название раздела.
+    """
+
+    def __init__(self, title: str):
+        self.title = title
+        super().__init__(
+            f'Раздел «{title}» уже существует',
+            'SECTION_TITLE_EXISTS',
+        )
+
+
 class RateLimitExceededError(DomainError):
     """
     Превышен лимит создания тем или сообщений.
@@ -284,6 +299,7 @@ __all__ = [
     'InvalidQuoteError',
     'TopicTitleExistsError',
     'CategoryTitleExistsError',
+    'SectionTitleExistsError',
     'RateLimitExceededError',
     'ChatAccessDeniedError',
     'SelfChatForbiddenError',

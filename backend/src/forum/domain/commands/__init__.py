@@ -38,7 +38,12 @@ from .posts import (
     GetTopicPostsCommand,
     UpdatePostCommand,
 )
-from .sections import GetSectionByIdCommand, GetSectionsCommand
+from .sections import (
+    CreateSectionCommand,
+    GetSectionByIdCommand,
+    GetSectionsCommand,
+    UpdateSectionCommand,
+)
 from .support import CreateSupportTicketCommand
 from .topics import (
     CreateTopicCommand,
@@ -66,6 +71,7 @@ __all__ = [
     'Command',
     'CreateCategoryCommand',
     'CreateReplyCommand',
+    'CreateSectionCommand',
     'CreateSupportTicketCommand',
     'CreateTopicCommand',
     'CreateTopicPostCommand',
@@ -103,6 +109,7 @@ __all__ = [
     'TrackGuestVisitCommand',
     'TrackGuestVisitResult',
     'UpdatePostCommand',
+    'UpdateSectionCommand',
     'UpdateTopicTitleCommand',
     'UpdateUserProfileCommand',
     'UploadUserAvatarCommand',

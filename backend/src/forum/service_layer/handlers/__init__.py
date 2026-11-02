@@ -41,8 +41,10 @@ from forum.service_layer.handlers.posts import (
     handle_update_post_command,
 )
 from forum.service_layer.handlers.sections import (
+    handle_create_section_command,
     handle_get_section_by_id_command,
     handle_get_sections_command,
+    handle_update_section_command,
 )
 from forum.service_layer.handlers.support import (
     handle_create_support_ticket_command,
@@ -108,6 +110,12 @@ def get_command_handlers() -> dict[
         ),
         commands.GetSectionByIdCommand: (
             handle_get_section_by_id_command
+        ),
+        commands.CreateSectionCommand: (
+            handle_create_section_command
+        ),
+        commands.UpdateSectionCommand: (
+            handle_update_section_command
         ),
         commands.GetCategoriesCommand: (
             handle_get_categories_command

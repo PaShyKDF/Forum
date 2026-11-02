@@ -34,7 +34,13 @@ from .posts import (
     QuotedPostResponse,
     UpdatePostRequest,
 )
-from .sections import SectionBriefResponse, SectionResponse
+from .sections import (
+    CreateSectionRequest,
+    CreateSectionResponse,
+    SectionBriefResponse,
+    SectionResponse,
+    UpdateSectionRequest,
+)
 from .support import (
     CreateSupportTicketRequest,
     SupportTicketResponse,
@@ -75,6 +81,8 @@ __all__ = [
     'CreateCategoryResponse',
     'CreateDirectMessageRequest',
     'CreatePostRequest',
+    'CreateSectionRequest',
+    'CreateSectionResponse',
     'CreateSupportTicketRequest',
     'CreateTopicRequest',
     'CreateTopicResponse',
@@ -98,6 +106,7 @@ __all__ = [
     'TopicSummaryResponse',
     'UnreadCountResponse',
     'UpdatePostRequest',
+    'UpdateSectionRequest',
     'UpdateTopicTitleRequest',
     'UpdateTopicTitleResponse',
     'UpdateUserProfileRequest',

@@ -14,6 +14,7 @@ from forum.domain.exceptions import (
     PermissionDeniedError,
     RateLimitExceededError,
     RegistrationDeniedError,
+    SectionTitleExistsError,
     SelfChatForbiddenError,
     TopicClosedError,
     TopicTitleExistsError,
@@ -65,7 +66,11 @@ def raise_http_from_domain(error: DomainError) -> None:
         ) from error
     if isinstance(
         error,
-        (TopicTitleExistsError, CategoryTitleExistsError),
+        (
+            TopicTitleExistsError,
+            CategoryTitleExistsError,
+            SectionTitleExistsError,
+        ),
     ):
         raise HTTPException(
             status_code=409,
