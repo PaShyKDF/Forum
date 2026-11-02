@@ -8,6 +8,10 @@ from fastapi import Response
 from forum.config import configuration
 from forum.domain import commands
 from forum.domain.commands.visitors import TrackGuestVisitResult
+from forum.domain.exceptions import (
+    AccountDeletedError,
+    RegistrationDeniedError,
+)
 from forum.domain.schemas.users import UserResponse
 from forum.service_layer import unit_of_work
 from forum.service_layer.assemblers import build_user_response
@@ -233,6 +237,45 @@ async def handle_track_guest_visit_command(
     )
 
 
+async def _assert_registration_not_banned(
+    uow: unit_of_work.AbstractUnitOfWork,
+    *,
+    email: str | None,
+    client_ip: str | None,
+) -> None:
+    """
+    Блокирует регистрацию по email/IP удалённых.
+
+    Args:
+        uow: Unit of Work с user_repository.
+        email: email из Keycloak или None.
+        client_ip: IP клиента или None.
+
+    Raises:
+        RegistrationDeniedError: email или IP в бане.
+    """
+    if email:
+        banned = (
+            await uow.user_repository.get_deleted_by_email(
+                email,
+            )
+        )
+        if banned is not None:
+            raise RegistrationDeniedError(
+                'Регистрация с этим email запрещена',
+            )
+    if client_ip:
+        banned_ip = (
+            await uow.user_repository.get_deleted_by_last_ip(
+                client_ip,
+            )
+        )
+        if banned_ip is not None:
+            raise RegistrationDeniedError(
+                'Регистрация с этого IP запрещена',
+            )
+
+
 @log
 async def merge_guest_on_login(
     command: commands.EnsureUserCommand,
@@ -245,7 +288,8 @@ async def merge_guest_on_login(
 
     Если есть guest по anon_id и ещё нет user с Keycloak uid —
     промоутим гостевую строку. Иначе обычный ensure +
-    удаление гостя при конфликте.
+    удаление гостя при конфликте. Обезличенные аккаунты
+    и бан email/IP блокируют вход/регистрацию.
 
     Args:
         command: данные пользователя из Keycloak.
@@ -254,6 +298,10 @@ async def merge_guest_on_login(
 
     Returns:
         UserResponse зарегистрированного пользователя.
+
+    Raises:
+        AccountDeletedError: обезличенный аккаунт.
+        RegistrationDeniedError: бан email/IP.
     """
     now = utc_now_naive()
     existing = await uow.user_repository.get_by_id(
@@ -266,6 +314,10 @@ async def merge_guest_on_login(
         )
 
     if existing is not None:
+        if getattr(existing, 'is_deleted', False):
+            raise AccountDeletedError(
+                'Аккаунт удалён',
+            )
         if (
             guest is not None
             and guest.is_guest
@@ -290,6 +342,12 @@ async def merge_guest_on_login(
             command.uid,
         )
         return build_user_response(user)
+
+    await _assert_registration_not_banned(
+        uow,
+        email=command.email,
+        client_ip=command.client_ip,
+    )
 
     if guest is not None and guest.is_guest:
         # Локальный импорт: избегаем цикла auth ↔ visitors

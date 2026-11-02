@@ -47,7 +47,10 @@ class SupportTicketAdmin(BaseModelView, model=SupportTicket):
     name_plural = 'Обращения в техподдержку'
     category = 'Поддержка'
     can_create = False
-    can_delete = False
+    delete_warning = (
+        'Обращение в техподдержку будет удалено '
+        'безвозвратно.'
+    )
     form_widget_args = {
         'body': {
             'rows': 10,

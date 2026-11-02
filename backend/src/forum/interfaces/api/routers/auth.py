@@ -13,6 +13,10 @@ from fastapi import (
 from fastapi.responses import RedirectResponse
 
 from forum.config import configuration
+from forum.domain.exceptions import (
+    AccountDeletedError,
+    RegistrationDeniedError,
+)
 from forum.domain.schemas.auth import AuthSessionResponse
 from forum.interfaces.admin.auth import ADMIN_OAUTH_STATE
 from forum.service_layer.auth_cookies import (
@@ -23,6 +27,7 @@ from forum.service_layer.auth_cookies import (
     refresh_session_if_needed,
     sanitize_post_login_next,
     set_auth_cookies,
+    set_login_notice_cookie,
     set_post_login_next_cookie,
 )
 from forum.service_layer.auth_dep import (
@@ -122,6 +127,48 @@ def _redirect_after_login(
         url=build_post_login_url(next_path),
         status_code=302,
     )
+
+
+def _frontend_post_logout_url() -> str:
+    """
+    post_logout_redirect_uri из FORUM_FRONTEND_URL.
+
+    Без query: Keycloak сверяет URI с whitelist
+    (Valid post logout redirect URIs).
+
+    Returns:
+        Абсолютный URL фронта.
+    """
+    return configuration.keycloak.frontend_url.rstrip('/')
+
+
+def _denied_login_logout_redirect(
+    *,
+    notice: str,
+    id_token: str | None,
+) -> RedirectResponse:
+    """
+    Завершает SSO без auth-cookies; notice в cookie.
+
+    Args:
+        notice: account-deleted | registration-denied.
+        id_token: id_token_hint для Keycloak logout.
+
+    Returns:
+        302 на Keycloak end-session.
+    """
+    logout_url = KeycloakClient.build_logout_url(
+        post_logout_redirect_uri=_frontend_post_logout_url(),
+        id_token=id_token,
+    )
+    response = RedirectResponse(
+        url=logout_url,
+        status_code=302,
+    )
+    clear_auth_cookies(response)
+    clear_post_login_next_cookie(response)
+    set_login_notice_cookie(response, notice)
+    return response
 
 
 async def _persist_user_from_tokens(
@@ -346,14 +393,32 @@ async def login_callback(
             _require_token_trio(token_data)
         )
 
-        user = await _persist_user_from_tokens(
-            keycloak=keycloak,
-            access_token=access_token,
-            id_token=id_token,
-            message_bus=message_bus,
-            anon_id=read_anon_id(request),
-            client_ip=await resolve_client_ip(request),
-        )
+        try:
+            user = await _persist_user_from_tokens(
+                keycloak=keycloak,
+                access_token=access_token,
+                id_token=id_token,
+                message_bus=message_bus,
+                anon_id=read_anon_id(request),
+                client_ip=await resolve_client_ip(request),
+            )
+        except AccountDeletedError:
+            logger.warning(
+                'Вход отклонён: аккаунт удалён',
+            )
+            return _denied_login_logout_redirect(
+                notice='account-deleted',
+                id_token=id_token,
+            )
+        except RegistrationDeniedError as denied:
+            logger.warning(
+                'Вход отклонён: %s',
+                denied.message,
+            )
+            return _denied_login_logout_redirect(
+                notice='registration-denied',
+                id_token=id_token,
+            )
 
         required_role = configuration.admin.required_role
         has_admin = KeycloakClient.has_role(
@@ -389,6 +454,18 @@ async def login_callback(
 
     except HTTPException:
         raise
+    except AccountDeletedError:
+        logger.warning('Вход отклонён: аккаунт удалён')
+        return _denied_login_logout_redirect(
+            notice='account-deleted',
+            id_token=None,
+        )
+    except RegistrationDeniedError as denied:
+        logger.warning('Вход отклонён: %s', denied.message)
+        return _denied_login_logout_redirect(
+            notice='registration-denied',
+            id_token=None,
+        )
     except Exception as e:
         logger.error(
             'Ошибка обработки callback логина: %s',

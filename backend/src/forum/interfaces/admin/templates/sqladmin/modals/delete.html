@@ -1,12 +1,29 @@
 <div class="modal modal-blur fade" id="modal-delete" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+  <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content">
       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       <div class="modal-status bg-danger"></div>
       <div class="modal-body text-center py-4">
         <i class="text-danger fa-solid fa-triangle-exclamation fa-2x"></i>
-        <h3>Пожалуйста подтвердите</h3>
-        <div id="modal-delete-text" class="text-muted"></div>
+        <h3>Подтвердите удаление</h3>
+        <div id="modal-delete-text" class="text-muted mb-2"></div>
+        <div
+          id="modal-delete-warning"
+          class="text-danger small text-start mx-auto"
+          style="max-width: 28rem;"
+          data-warning="{{ model_view.delete_warning }}"
+        >{{ model_view.delete_warning }}</div>
+        <div class="form-check text-start mt-3 mx-auto" style="max-width: 28rem;">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            id="modal-delete-confirm"
+          >
+          <label class="form-check-label" for="modal-delete-confirm">
+            Я понимаю последствия и согласен удалить
+            связанные данные
+          </label>
+        </div>
       </div>
       <div class="modal-footer">
         <div class="w-100">
@@ -17,7 +34,12 @@
               </a>
             </div>
             <div class="col">
-              <button id="modal-delete-button" data-url="" class="btn btn-danger w-100">
+              <button
+                id="modal-delete-button"
+                data-url=""
+                class="btn btn-danger w-100"
+                disabled
+              >
                 Удалить
               </button>
             </div>

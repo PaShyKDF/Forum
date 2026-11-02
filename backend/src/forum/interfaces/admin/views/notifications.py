@@ -51,4 +51,6 @@ class TopicNotificationAdmin(
     name_plural = 'Уведомления тем'
     category = 'Уведомления'
     can_create = False
-    can_delete = False
+    delete_warning = (
+        'Уведомление будет удалено безвозвратно.'
+    )

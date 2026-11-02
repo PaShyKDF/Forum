@@ -54,6 +54,11 @@ from forum.domain.schemas.users import (
     UserProfileResponse,
     UserResponse,
 )
+from forum.service_layer.user_deletion import (
+    is_user_deleted,
+    public_display_name,
+    public_initials,
+)
 
 
 def _category_core_fields(category: Category) -> dict:
@@ -85,7 +90,7 @@ def build_last_post(
         return None
     return LastPostResponse(
         title=topic.title,
-        author=post.author.display_name,
+        author=public_display_name(post.author),
         author_uid=post.author.uid,
         created_at=post.created_at,
         topic_id=topic.id,
@@ -279,10 +284,14 @@ def _avatar_endpoint(uid: uuid.UUID) -> str:
 
 
 def _user_has_avatar(user: User) -> bool:
+    if is_user_deleted(user):
+        return False
     return user.avatar_mime is not None
 
 
 def _resolve_avatar_url(user: User) -> str | None:
+    if is_user_deleted(user):
+        return None
     if _user_has_avatar(user):
         return _avatar_endpoint(user.uid)
     return user.avatar_url
@@ -306,10 +315,14 @@ def build_user_response(
     return UserResponse(
         uid=user.uid,
         username=user.username,
-        email=user.email,
-        email_verified=user.email_verified,
-        display_name=user.display_name,
-        initials=user.initials,
+        email=None if is_user_deleted(user) else user.email,
+        email_verified=(
+            False
+            if is_user_deleted(user)
+            else user.email_verified
+        ),
+        display_name=public_display_name(user),
+        initials=public_initials(user),
         avatar_url=_resolve_avatar_url(user),
         has_avatar=_user_has_avatar(user),
         is_admin=is_admin,
@@ -333,10 +346,14 @@ def build_user_profile_response(
     return UserProfileResponse(
         uid=user.uid,
         username=user.username,
-        email=user.email,
-        email_verified=user.email_verified,
-        display_name=user.display_name,
-        initials=user.initials,
+        email=None if is_user_deleted(user) else user.email,
+        email_verified=(
+            False
+            if is_user_deleted(user)
+            else user.email_verified
+        ),
+        display_name=public_display_name(user),
+        initials=public_initials(user),
         avatar_url=_resolve_avatar_url(user),
         has_avatar=_user_has_avatar(user),
         posts_count=posts_count,
@@ -363,13 +380,17 @@ def build_public_user_profile_response(
     return PublicUserProfileResponse(
         uid=user.uid,
         username=user.username,
-        display_name=user.display_name,
-        initials=user.initials,
+        display_name=public_display_name(user),
+        initials=public_initials(user),
         avatar_url=_resolve_avatar_url(user),
         has_avatar=_user_has_avatar(user),
-        is_active=user.is_active,
+        is_active=user.is_active and not is_user_deleted(user),
         created_at=user.created_at,
-        last_seen_at=user.last_seen_at,
+        last_seen_at=(
+            None
+            if is_user_deleted(user)
+            else user.last_seen_at
+        ),
         posts_count=posts_count,
         topics_count=topics_count,
     )
@@ -387,8 +408,8 @@ def build_author(author: User) -> AuthorResponse:
     """
     return AuthorResponse(
         uid=author.uid,
-        display_name=author.display_name,
-        initials=author.initials,
+        display_name=public_display_name(author),
+        initials=public_initials(author),
         avatar_url=_resolve_avatar_url(author),
     )
 
@@ -463,7 +484,7 @@ def build_quoted_post(
     if len(snippet) > 140:
         snippet = f'{snippet[:137]}...'
     author_name = (
-        quoted.author.display_name
+        public_display_name(quoted.author)
         if quoted.author is not None
         else '—'
     )
@@ -657,9 +678,9 @@ def build_chat_peer(user: User) -> ChatPeerResponse:
     """
     return ChatPeerResponse(
         uid=user.uid,
-        display_name=user.display_name,
+        display_name=public_display_name(user),
         username=user.username,
-        initials=user.initials,
+        initials=public_initials(user),
         avatar_url=_resolve_avatar_url(user),
         has_avatar=_user_has_avatar(user),
     )
@@ -770,7 +791,7 @@ def build_topic_notification_item(
     """
     actor = notification.actor
     actor_name = (
-        actor.display_name
+        public_display_name(actor)
         if actor is not None
         else 'Пользователь'
     )

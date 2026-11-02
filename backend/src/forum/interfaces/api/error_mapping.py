@@ -3,6 +3,7 @@
 from fastapi import HTTPException
 
 from forum.domain.exceptions import (
+    AccountDeletedError,
     CategoryTitleExistsError,
     ChatAccessDeniedError,
     DomainError,
@@ -12,6 +13,7 @@ from forum.domain.exceptions import (
     NestedReplyForbiddenError,
     PermissionDeniedError,
     RateLimitExceededError,
+    RegistrationDeniedError,
     SelfChatForbiddenError,
     TopicClosedError,
     TopicTitleExistsError,
@@ -42,6 +44,8 @@ def raise_http_from_domain(error: DomainError) -> None:
         error,
         (
             PermissionDeniedError,
+            AccountDeletedError,
+            RegistrationDeniedError,
             ChatAccessDeniedError,
         ),
     ):

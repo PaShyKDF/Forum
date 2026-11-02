@@ -113,6 +113,14 @@ class User(
         default=False,
         server_default=false(),
     )
+    # Обезличен админкой: на форуме «Пользователь удален»
+    is_deleted: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=false(),
+        index=True,
+    )
     # Момент превращения гостя в аккаунт (Keycloak)
     registered_at: Mapped[datetime | None] = mapped_column(
         DateTime,
@@ -121,12 +129,10 @@ class User(
 
     topics: Mapped[list['Topic']] = relationship(
         back_populates='author',
-        cascade='all, delete-orphan',
         foreign_keys='Topic.author_id',
     )
     posts: Mapped[list['Post']] = relationship(
         back_populates='author',
-        cascade='all, delete-orphan',
         foreign_keys='Post.author_id',
     )
     category_access_rows: Mapped[list['CategoryUserAccess']] = (

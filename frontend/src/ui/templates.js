@@ -1164,6 +1164,10 @@ export const supportTemplate = ({
 
 export const notFoundTemplate = `<section class="empty-state"><span>◌</span><h1>Страница пока не найдена</h1><p>Возможно, она ещё не создана.</p><a class="button" href="#/">Вернуться на главную</a></section>`;
 
+export const accountDeletedTemplate = `<section class="empty-state"><span>◌</span><h1>Аккаунт удалён</h1><p>Ваш аккаунт был удалён администрацией форума. Войти с этими данными больше нельзя.</p><a class="button" href="#/">Понятно</a></section>`;
+
+export const registrationDeniedTemplate = `<section class="empty-state"><span>◌</span><h1>Регистрация недоступна</h1><p>Создать аккаунт с этим email или IP нельзя. Если считаете, что это ошибка, напишите в поддержку.</p><a class="button" href="#/">Понятно</a></section>`;
+
 export const rulesTemplate = (sections) => {
   const body = (sections || [])
     .map((section) => {

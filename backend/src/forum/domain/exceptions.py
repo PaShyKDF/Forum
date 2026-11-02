@@ -82,6 +82,34 @@ class PermissionDeniedError(DomainError):
         super().__init__(message, 'PERMISSION_DENIED')
 
 
+class AccountDeletedError(DomainError):
+    """
+    Пользователь обезличен в админке.
+
+    Повторный вход и выдача сессии запрещены.
+    """
+
+    def __init__(
+        self,
+        message: str = 'Аккаунт удалён',
+    ):
+        super().__init__(message, 'ACCOUNT_DELETED')
+
+
+class RegistrationDeniedError(DomainError):
+    """
+    Регистрация запрещена (email или IP удалённого).
+
+    Новый Keycloak-аккаунт не создаётся.
+    """
+
+    def __init__(
+        self,
+        message: str = 'Регистрация запрещена',
+    ):
+        super().__init__(message, 'REGISTRATION_DENIED')
+
+
 class TopicClosedError(DomainError):
     """
     Тема закрыта для новых сообщений.
@@ -248,6 +276,8 @@ __all__ = [
     'HandlerNotFoundError',
     'EntityNotFoundError',
     'PermissionDeniedError',
+    'AccountDeletedError',
+    'RegistrationDeniedError',
     'TopicClosedError',
     'EditWindowExpiredError',
     'NestedReplyForbiddenError',

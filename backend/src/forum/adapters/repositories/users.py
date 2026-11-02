@@ -216,6 +216,60 @@ class UserRepository(SQLAlchemyRepository[User, uuid.UUID]):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_deleted_by_email(
+        self,
+        email: str,
+    ) -> User | None:
+        """
+        Обезличенный пользователь с тем же email.
+
+        Args:
+            email: email для поиска (без учёта регистра).
+
+        Returns:
+            User с is_deleted=True или None.
+        """
+        normalized = (email or '').strip().lower()
+        if not normalized:
+            return None
+        stmt = (
+            select(User)
+            .where(
+                User.is_deleted.is_(True),
+                func.lower(User.email) == normalized,
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_deleted_by_last_ip(
+        self,
+        ip: str,
+    ) -> User | None:
+        """
+        Обезличенный пользователь с тем же last_ip.
+
+        Args:
+            ip: IP-адрес клиента.
+
+        Returns:
+            User с is_deleted=True или None.
+        """
+        normalized = (ip or '').strip()
+        if not normalized:
+            return None
+        stmt = (
+            select(User)
+            .where(
+                User.is_deleted.is_(True),
+                User.last_ip == normalized,
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def create_guest(
         self,
         *,

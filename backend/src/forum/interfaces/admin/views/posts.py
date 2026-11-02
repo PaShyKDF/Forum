@@ -45,7 +45,10 @@ class PostAdmin(BaseModelView, model=Post):
     name = 'Сообщение'
     name_plural = 'Сообщения'
     category = 'Форум'
-    can_delete = False
+    delete_warning = (
+        'Сообщение будет удалено безвозвратно. '
+        'Ответы и цитаты потеряют ссылку на него.'
+    )
     form_widget_args = {
         'body': {
             'rows': 8,

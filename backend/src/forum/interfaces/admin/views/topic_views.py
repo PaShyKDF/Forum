@@ -47,4 +47,7 @@ class TopicViewAdmin(BaseModelView, model=TopicView):
     category = 'Форум'
     can_create = False
     can_edit = False
-    can_delete = False
+    delete_warning = (
+        'Запись просмотра будет удалена. '
+        'Счётчик Topic.views_count не уменьшится.'
+    )

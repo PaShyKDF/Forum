@@ -40,4 +40,7 @@ class SectionAdmin(BaseModelView, model=Section):
     name = 'Раздел'
     name_plural = 'Разделы'
     category = 'Форум'
-    can_delete = False
+    delete_warning = (
+        'Будут удалены все категории раздела, '
+        'темы, сообщения, доступы и просмотры.'
+    )

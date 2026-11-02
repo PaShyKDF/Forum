@@ -74,4 +74,7 @@ class TopicAdmin(BaseModelView, model=Topic):
     name = 'Тема'
     name_plural = 'Темы'
     category = 'Форум'
-    can_delete = False
+    delete_warning = (
+        'Будут удалены все сообщения темы, '
+        'доступы, уведомления и просмотры.'
+    )

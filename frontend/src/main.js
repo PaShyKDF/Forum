@@ -4,6 +4,7 @@ import { forumApi } from './services/forum-api.js';
 import { notificationsApi } from './services/notifications-api.js';
 import { rulesSections } from './content/rules.js';
 import {
+  accountDeletedTemplate,
   chatListItemTemplate,
   chatsPageTemplate,
   contactTemplate,
@@ -15,6 +16,7 @@ import {
   postCardTemplate,
   profileTemplate,
   publicProfileTemplate,
+  registrationDeniedTemplate,
   repliesBlockTemplate,
   rulesTemplate,
   sectionTemplate,
@@ -107,6 +109,9 @@ const routes = {
   '/rules': async () => rulesTemplate(rulesSections),
   '/contact': async () =>
     contactTemplate(await forumApi.getContactPage()),
+  '/account-deleted': async () => accountDeletedTemplate,
+  '/registration-denied': async () =>
+    registrationDeniedTemplate,
   '/support': async () => {
     const email = currentUser?.email || '';
     const emailLocked = Boolean(currentUser);
@@ -118,6 +123,49 @@ const routes = {
     });
   },
 };
+
+function readCookie(name) {
+  const prefix = `${name}=`;
+  const parts = document.cookie.split(';');
+  for (const part of parts) {
+    const value = part.trim();
+    if (value.startsWith(prefix)) {
+      return decodeURIComponent(value.slice(prefix.length));
+    }
+  }
+  return null;
+}
+
+function clearCookie(name) {
+  document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`;
+}
+
+function applyLoginNotice() {
+  const noticeRoutes = {
+    'account-deleted': '#/account-deleted',
+    'registration-denied': '#/registration-denied',
+  };
+  const fromCookie = readCookie('forum_login_notice');
+  const fromQuery = new URLSearchParams(
+    window.location.search,
+  ).get('notice');
+  const notice = fromCookie || fromQuery;
+  if (!notice) {
+    return;
+  }
+  const target = noticeRoutes[notice];
+  if (!target) {
+    return;
+  }
+  clearCookie('forum_login_notice');
+  const url = new URL(window.location.href);
+  url.searchParams.delete('notice');
+  const cleanSearch = url.searchParams.toString();
+  const cleanPath = cleanSearch
+    ? `${url.pathname}?${cleanSearch}`
+    : url.pathname;
+  window.history.replaceState(null, '', cleanPath + target);
+}
 
 const scrollPositions = new Map();
 let historyNavigation = false;
@@ -2435,6 +2483,7 @@ window.addEventListener('popstate', () => {
 window.addEventListener('hashchange', render);
 
 void (async () => {
+  applyLoginNotice();
   await refreshSession();
   await render();
 })();

@@ -56,4 +56,7 @@ class CategoryAdmin(BaseModelView, model=Category):
     name = 'Категория'
     name_plural = 'Категории'
     category = 'Форум'
-    can_delete = False
+    delete_warning = (
+        'Будут удалены все темы категории, '
+        'сообщения, доступы и просмотры.'
+    )

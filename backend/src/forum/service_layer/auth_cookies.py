@@ -11,6 +11,11 @@ from forum.service_layer.keycloak_client import KeycloakClient
 logger = logging.getLogger(__name__)
 
 POST_LOGIN_NEXT_COOKIE = 'post_login_next'
+LOGIN_NOTICE_COOKIE = 'forum_login_notice'
+_ALLOWED_LOGIN_NOTICES = frozenset({
+    'account-deleted',
+    'registration-denied',
+})
 _MAX_NEXT_LENGTH = 500
 
 
@@ -100,6 +105,53 @@ def clear_post_login_next_cookie(response: Response) -> None:
     response.delete_cookie(
         key=POST_LOGIN_NEXT_COOKIE,
         httponly=True,
+        secure=configuration.keycloak.cookie_secure,
+        samesite='lax',
+        path='/',
+    )
+
+
+def set_login_notice_cookie(
+    response: Response,
+    notice: str,
+) -> None:
+    """
+    Сохраняет notice для экрана после KC logout.
+
+    Cookie читается JS на фронте (не HttpOnly).
+    post_logout_redirect_uri остаётся FORUM_FRONTEND_URL
+    без query — так Keycloak принимает URI из whitelist.
+
+    Args:
+        response: HTTP-ответ с Set-Cookie.
+        notice: account-deleted | registration-denied.
+
+    Raises:
+        ValueError: неизвестный notice.
+    """
+    if notice not in _ALLOWED_LOGIN_NOTICES:
+        raise ValueError(f'Неизвестный notice: {notice}')
+    response.set_cookie(
+        key=LOGIN_NOTICE_COOKIE,
+        value=notice,
+        httponly=False,
+        secure=configuration.keycloak.cookie_secure,
+        samesite='lax',
+        path='/',
+        max_age=300,
+    )
+
+
+def clear_login_notice_cookie(response: Response) -> None:
+    """
+    Удаляет cookie notice после показа экрана.
+
+    Args:
+        response: HTTP-ответ с Delete-Cookie.
+    """
+    response.delete_cookie(
+        key=LOGIN_NOTICE_COOKIE,
+        httponly=False,
         secure=configuration.keycloak.cookie_secure,
         samesite='lax',
         path='/',

@@ -6,6 +6,7 @@ from sqladmin import Admin
 from sqladmin.helpers import get_object_identifier
 from sqladmin.models import ModelView
 from starlette.datastructures import URL, FormData
+from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 
@@ -17,6 +18,29 @@ from forum.service_layer.keycloak_client import KeycloakClient
 
 class RuAdmin(Admin):
     """SQLAdmin с русскими кнопками и Keycloak-логином."""
+
+    async def delete(self, request: Request) -> Response:
+        """
+        Удаление с обязательным confirm=1.
+
+        Args:
+            request: DELETE /admin/.../delete?pks=&confirm=1.
+
+        Returns:
+            Ответ базового Admin.delete.
+
+        Raises:
+            HTTPException: 400 без confirm=1.
+        """
+        if request.query_params.get('confirm') != '1':
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    'Нужно подтвердить удаление '
+                    '(чекбокс согласия)'
+                ),
+            )
+        return await super().delete(request)
 
     def get_save_redirect_url(
         self,

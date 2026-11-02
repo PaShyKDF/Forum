@@ -32,6 +32,67 @@
   <script type="text/javascript" src="{{ url_for('admin:statics', path='js/select2.full.min.js') }}"></script>
   <script type="text/javascript" src="{{ url_for('admin:statics', path='js/flatpickr.min.js') }}"></script>
   <script type="text/javascript" src="{{ url_for('admin:statics', path='js/main.js') }}"></script>
+  <script type="text/javascript">
+    (function ($) {
+      function withConfirm(url) {
+        if (!url) {
+          return url;
+        }
+        return url.indexOf('?') >= 0
+          ? url + '&confirm=1'
+          : url + '?confirm=1';
+      }
+
+      $(document).off('shown.bs.modal', '#modal-delete');
+      $(document).off('click', '#modal-delete-button');
+
+      $(document).on('shown.bs.modal', '#modal-delete', function (event) {
+        var element = $(event.relatedTarget);
+        if (!element || !element.length) {
+          element = $('#action-delete');
+        }
+        var name = element.data('name') || '';
+        var pk = element.data('pk');
+        var warning = $('#modal-delete-warning').data('warning') || '';
+        var text;
+        if (pk !== undefined && pk !== null && pk !== '') {
+          text = 'Будет удалено: ' + name + ' (' + pk + ').';
+        } else {
+          text = 'Будут удалены выбранные объекты: ' + name + '.';
+        }
+        $('#modal-delete-text').text(text);
+        $('#modal-delete-warning').text(warning);
+        $('#modal-delete-confirm').prop('checked', false);
+        $('#modal-delete-button')
+          .prop('disabled', true)
+          .attr('data-url', element.data('url') || '');
+      });
+
+      $(document).on('change', '#modal-delete-confirm', function () {
+        $('#modal-delete-button').prop(
+          'disabled',
+          !$(this).is(':checked'),
+        );
+      });
+
+      $(document).on('click', '#modal-delete-button', function () {
+        if (!$('#modal-delete-confirm').is(':checked')) {
+          return;
+        }
+        var url = withConfirm($(this).attr('data-url'));
+        $.ajax({
+          url: url,
+          method: 'DELETE',
+          success: function (result) {
+            window.location.href = result;
+          },
+          error: function (request) {
+            alert(request.responseText || 'Ошибка удаления');
+          },
+        });
+      });
+    })(window.jQuery);
+  </script>
   {% block tail %}
   {% endblock %}
 </body>

@@ -38,7 +38,10 @@ class DirectChatAdmin(BaseModelView, model=DirectChat):
     name = 'Диалог'
     name_plural = 'Личные диалоги'
     category = 'Чаты'
-    can_delete = False
+    delete_warning = (
+        'Будет удалён диалог и все личные '
+        'сообщения в нём.'
+    )
 
 
 class DirectMessageAdmin(BaseModelView, model=DirectMessage):
@@ -80,7 +83,10 @@ class DirectMessageAdmin(BaseModelView, model=DirectMessage):
     name = 'Личное сообщение'
     name_plural = 'Личные сообщения'
     category = 'Чаты'
-    can_delete = False
+    delete_warning = (
+        'Личное сообщение будет удалено '
+        'безвозвратно.'
+    )
     form_widget_args = {
         'body': {
             'rows': 8,
