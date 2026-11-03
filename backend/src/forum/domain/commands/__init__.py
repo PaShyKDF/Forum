@@ -6,6 +6,7 @@ from .acl import (
     SearchUsersCommand,
     SetCategoryMembersCommand,
     SetCategoryVisibilityCommand,
+    SetTopicClosedCommand,
     SetTopicMembersCommand,
     SetTopicVisibilityCommand,
 )
@@ -104,6 +105,7 @@ __all__ = [
     'SendDirectMessageCommand',
     'SetCategoryMembersCommand',
     'SetCategoryVisibilityCommand',
+    'SetTopicClosedCommand',
     'SetTopicMembersCommand',
     'SetTopicVisibilityCommand',
     'TrackGuestVisitCommand',

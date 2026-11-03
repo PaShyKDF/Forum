@@ -268,6 +268,44 @@ async def handle_set_topic_visibility_command(
 
 
 @log
+async def handle_set_topic_closed_command(
+    command: commands.SetTopicClosedCommand,
+    uow: unit_of_work.AbstractUnitOfWork,
+) -> dict:
+    """
+    Закрывает или открывает тему для ответов.
+
+    Args:
+        command: ID темы, is_closed, is_admin.
+        uow: Unit of Work текущего запроса.
+
+    Returns:
+        Словарь с id и is_closed темы.
+
+    Raises:
+        PermissionDeniedError: Если вызывающий не админ.
+        EntityNotFoundError: Если тема не найдена.
+    """
+    require_admin(command.is_admin)
+    topic = await uow.topic_repository.get_by_id(
+        command.topic_id,
+    )
+    if topic is None:
+        raise EntityNotFoundError('Topic', command.topic_id)
+    topic.is_closed = command.is_closed
+    await uow.commit()
+    logger.info(
+        'Тема %s is_closed=%s',
+        command.topic_id,
+        command.is_closed,
+    )
+    return {
+        'id': topic.id,
+        'is_closed': topic.is_closed,
+    }
+
+
+@log
 async def handle_search_users_command(
     command: commands.SearchUsersCommand,
     uow: unit_of_work.AbstractUnitOfWork,

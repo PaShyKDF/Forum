@@ -518,6 +518,7 @@ async function loadTopicPage(topicId, page = 1) {
     id: topic.id,
     title: topic.title,
     isClosed: topic.isClosed,
+    canManage: Boolean(topic.canManage),
     canEditTitle: Boolean(topic.canEditTitle),
     posts: topic.posts,
     repliesCache: new Map(),
@@ -703,6 +704,24 @@ async function handleTopicClick(event) {
       await forumApi.setTopicVisibility(
         topicId,
         !currentlyRestricted,
+      );
+      await render();
+    } catch (error) {
+      window.alert(error.message);
+    } finally {
+      actionBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (actionBtn?.dataset.action === 'toggle-topic-closed') {
+    const topicId = Number(topicPage.dataset.topicId);
+    const currentlyClosed = actionBtn.dataset.closed === '1';
+    actionBtn.disabled = true;
+    try {
+      await forumApi.setTopicClosed(
+        topicId,
+        !currentlyClosed,
       );
       await render();
     } catch (error) {
@@ -915,7 +934,7 @@ async function handleTopicClick(event) {
       location.href = authApi.startUrl();
       return;
     }
-    if (topicState.isClosed) {
+    if (topicState.isClosed && !topicState.canManage) {
       return;
     }
     const quote = quoteFromPostEl(postEl);
@@ -960,7 +979,7 @@ async function handleTopicClick(event) {
       location.href = authApi.startUrl();
       return;
     }
-    if (topicState.isClosed) {
+    if (topicState.isClosed && !topicState.canManage) {
       return;
     }
     if (postEl.dataset.isRoot !== '1') {
@@ -1557,6 +1576,9 @@ async function handleForumSubmit(event) {
   const isRestricted = Boolean(
     form.querySelector('[name="is_restricted"]')?.checked,
   );
+  const isClosed = Boolean(
+    form.querySelector('[name="is_closed"]')?.checked,
+  );
   const allowedUserUids = getDraftMemberUids(
     form.querySelector('[data-new-topic-members]')
       || form,
@@ -1572,6 +1594,7 @@ async function handleForumSubmit(event) {
       title,
       body,
       isRestricted,
+      isClosed,
       allowedUserUids,
     });
     location.hash = `#/topic/${created.id}`;

@@ -127,6 +127,13 @@ class CreateTopicRequest(BaseSchema):
         False,
         description='Создать скрытую тему (только админ)',
     )
+    is_closed: bool = Field(
+        False,
+        description=(
+            'Только для чтения: писать может только '
+            'админ (только админ при создании)'
+        ),
+    )
     allowed_user_uids: list[uuid.UUID] = Field(
         default_factory=list,
         description='Whitelist при создании скрытой темы',
@@ -139,6 +146,18 @@ class VisibilityUpdateRequest(BaseSchema):
     is_restricted: bool = Field(
         ...,
         description='True — скрыть, False — открыть',
+    )
+
+
+class ClosedUpdateRequest(BaseSchema):
+    """Закрыть или открыть тему для ответов."""
+
+    is_closed: bool = Field(
+        ...,
+        description=(
+            'True — только чтение (писать админ), '
+            'False — обычные ответы'
+        ),
     )
 
 
@@ -194,6 +213,7 @@ class UpdateTopicTitleResponse(BaseSchema):
 __all__ = [
     'AccessMemberResponse',
     'CategoryBriefResponse',
+    'ClosedUpdateRequest',
     'CreateTopicRequest',
     'CreateTopicResponse',
     'MembersUpdateRequest',

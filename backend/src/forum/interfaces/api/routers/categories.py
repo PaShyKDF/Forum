@@ -222,6 +222,7 @@ async def create_topic(
         body=payload.body,
         description=payload.description,
         is_restricted=payload.is_restricted,
+        is_closed=payload.is_closed,
         allowed_user_uids=payload.allowed_user_uids,
         is_admin=current_user.is_admin,
     )

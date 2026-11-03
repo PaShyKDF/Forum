@@ -18,6 +18,7 @@ from forum.domain.schemas import (
 )
 from forum.domain.schemas.topics import (
     AccessMemberResponse,
+    ClosedUpdateRequest,
     MembersUpdateRequest,
     UpdateTopicTitleRequest,
     UpdateTopicTitleResponse,
@@ -441,6 +442,44 @@ async def set_topic_visibility(
             commands.SetTopicVisibilityCommand(
                 topic_id=topic_id,
                 is_restricted=payload.is_restricted,
+                actor_uid=current_user.uid,
+                is_admin=True,
+            ),
+        )
+    except DomainError as error:
+        raise_http_from_domain(error)
+
+
+@router.patch(
+    '/{topic_id}/closed',
+    summary='Закрыть или открыть тему для ответов',
+)
+async def set_topic_closed(
+    topic_id: int,
+    payload: ClosedUpdateRequest,
+    current_user: UserResponse = Depends(get_forum_admin),
+    message_bus: MessageBus = Depends(get_message_bus),
+) -> dict:
+    """
+    Делает тему только для чтения или снова открытой.
+
+    Args:
+        topic_id: ID темы.
+        payload: флаг is_closed.
+        current_user: администратор форума.
+        message_bus: Depends MessageBus.
+
+    Returns:
+        Словарь с id и is_closed.
+
+    Raises:
+        HTTPException: при доменной ошибке доступа/наличия.
+    """
+    try:
+        return await message_bus.handle(
+            commands.SetTopicClosedCommand(
+                topic_id=topic_id,
+                is_closed=payload.is_closed,
                 actor_uid=current_user.uid,
                 is_admin=True,
             ),

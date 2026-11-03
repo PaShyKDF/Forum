@@ -584,13 +584,18 @@ export const topicTemplate = (
     totalPages: 0,
     total: 0,
   };
+  const canCompose =
+    isAuthenticated
+    && (!topic.isClosed || topic.canManage);
   const closedNote = topic.isClosed
-    ? '<p class="topic-page__closed">Тема закрыта для новых ответов.</p>'
+    ? topic.canManage
+      ? '<p class="topic-page__closed">Тема только для чтения (админ может отвечать).</p>'
+      : '<p class="topic-page__closed">Тема только для чтения</p>'
     : '';
   const topicDescription = topic.description
     ? `<p class="topic-page__description">${escapeHtml(topic.description)}</p>`
     : '';
-  const compose = isAuthenticated && !topic.isClosed
+  const compose = canCompose
     ? `<form class="compose" data-compose-root>
         <div class="quote-preview" data-quote-preview hidden></div>
         <div class="compose__field">
@@ -622,10 +627,17 @@ export const topicTemplate = (
         data-restricted="${topic.isRestricted ? '1' : '0'}"
       >${topic.isRestricted ? 'Открыть' : 'Скрыть'}</button>`
     : '';
-  const replyBtn =
-    isAuthenticated && !topic.isClosed
-      ? '<button class="button button--soft" type="button" data-action="open-compose">Ответить</button>'
-      : '';
+  const closedBtn = topic.canManage
+    ? `<button
+        class="button button--soft"
+        type="button"
+        data-action="toggle-topic-closed"
+        data-closed="${topic.isClosed ? '1' : '0'}"
+      >${topic.isClosed ? 'Разрешить ответы' : 'Закрыть ответы'}</button>`
+    : '';
+  const replyBtn = canCompose
+    ? '<button class="button button--soft" type="button" data-action="open-compose">Ответить</button>'
+    : '';
   const editTitleBtn = topic.canEditTitle
     ? `<button
         class="button button--soft"
@@ -684,6 +696,7 @@ export const topicTemplate = (
         </div>
         <div class="topic-page__actions">
           ${visibilityBtn}
+          ${closedBtn}
           ${editTitleBtn}
           ${replyBtn}
         </div>
@@ -748,6 +761,14 @@ export const forumTemplate = (
           data-new-topic-restricted
         >
         <span>Скрытая тема</span>
+      </label>
+      <label class="acl-toggle">
+        <input
+          type="checkbox"
+          name="is_closed"
+          data-new-topic-closed
+        >
+        <span>Только для чтения</span>
       </label>
       <div
         class="acl-create"

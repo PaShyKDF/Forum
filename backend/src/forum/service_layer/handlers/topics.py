@@ -285,7 +285,7 @@ async def handle_create_topic_command(
 
     Args:
         command: category_id, author_id, title, body,
-            description, is_restricted,
+            description, is_restricted, is_closed,
             allowed_user_uids и is_admin.
         uow: Unit of Work текущего запроса.
 
@@ -297,7 +297,7 @@ async def handle_create_topic_command(
             или не найдена.
         TopicTitleExistsError: Если название занято.
         DomainError: Пустые title/body или создание
-            скрытой темы не-админом.
+            скрытой/закрытой темы не-админом.
         RateLimitExceededError: Если превышены лимиты
             создания тем.
     """
@@ -309,6 +309,7 @@ async def handle_create_topic_command(
     )
 
     is_restricted = bool(command.is_restricted)
+    is_closed = bool(command.is_closed)
     allowed_uids = list(command.allowed_user_uids or [])
     if is_restricted or allowed_uids:
         if not command.is_admin:
@@ -317,6 +318,12 @@ async def handle_create_topic_command(
                 'скрытые темы',
                 'PERMISSION_DENIED',
             )
+    if is_closed and not command.is_admin:
+        raise DomainError(
+            'Только администратор может создавать '
+            'темы только для чтения',
+            'PERMISSION_DENIED',
+        )
 
     await check_topic_limits(uow, command.author_id)
 
@@ -342,6 +349,7 @@ async def handle_create_topic_command(
         description=description,
         position=0,
         is_restricted=is_restricted,
+        is_closed=is_closed,
     )
     topic = await uow.topic_repository.add(topic)
 

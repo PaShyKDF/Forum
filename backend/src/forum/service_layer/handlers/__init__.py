@@ -7,6 +7,7 @@ from forum.service_layer.handlers.acl import (
     handle_search_users_command,
     handle_set_category_members_command,
     handle_set_category_visibility_command,
+    handle_set_topic_closed_command,
     handle_set_topic_members_command,
     handle_set_topic_visibility_command,
 )
@@ -220,6 +221,9 @@ def get_command_handlers() -> dict[
         ),
         commands.SetTopicVisibilityCommand: (
             handle_set_topic_visibility_command
+        ),
+        commands.SetTopicClosedCommand: (
+            handle_set_topic_closed_command
         ),
         commands.SearchUsersCommand: (
             handle_search_users_command

@@ -63,6 +63,16 @@ class SetTopicVisibilityCommand(Command):
 
 
 @dataclass
+class SetTopicClosedCommand(Command):
+    """Закрыть/открыть тему для ответов (is_closed)."""
+
+    topic_id: int
+    is_closed: bool
+    actor_uid: uuid.UUID
+    is_admin: bool = False
+
+
+@dataclass
 class SearchUsersCommand(Command):
     """Поиск пользователей для picker."""
 

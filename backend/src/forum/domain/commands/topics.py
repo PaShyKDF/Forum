@@ -37,6 +37,7 @@ class CreateTopicCommand(Command):
     body: str
     description: str | None = None
     is_restricted: bool = False
+    is_closed: bool = False
     allowed_user_uids: list[uuid.UUID] | None = None
     is_admin: bool = False
 

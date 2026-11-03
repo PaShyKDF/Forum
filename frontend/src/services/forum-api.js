@@ -342,6 +342,7 @@ export const forumApi = {
       body,
       description,
       isRestricted = false,
+      isClosed = false,
       allowedUserUids = [],
     },
   ) {
@@ -349,6 +350,7 @@ export const forumApi = {
       title,
       body,
       is_restricted: Boolean(isRestricted),
+      is_closed: Boolean(isClosed),
       allowed_user_uids: allowedUserUids,
     };
     if (description != null && description !== '') {
@@ -482,6 +484,15 @@ export const forumApi = {
       method: 'PATCH',
       body: JSON.stringify({
         is_restricted: Boolean(isRestricted),
+      }),
+    });
+  },
+
+  async setTopicClosed(topicId, isClosed) {
+    return request(`/api/topics/${topicId}/closed`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        is_closed: Boolean(isClosed),
       }),
     });
   },
