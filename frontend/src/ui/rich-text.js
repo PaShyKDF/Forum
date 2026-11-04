@@ -8,13 +8,19 @@ const ALLOWED_TAGS = new Set([
   'STRIKE',
   'DEL',
   'BR',
+  'A',
+  'SPAN',
 ]);
 
 const BLOCK_TAGS = new Set(['DIV', 'P', 'LI']);
+const FORMAT_COMMANDS = new Set([
+  'bold',
+  'italic',
+  'underline',
+  'strikeThrough',
+]);
 
 let activeEditor = null;
-let toolbarEl = null;
-let hideTimer = null;
 
 const escapeHtml = (value) =>
   String(value ?? '')
@@ -42,7 +48,79 @@ function stripAttributes(el) {
 }
 
 /**
- * Очищает HTML до allowlist-тегов без атрибутов.
+ * Нормализует и проверяет http(s) URL для ссылок.
+ *
+ * Args:
+ *   raw: исходная строка адреса.
+ *
+ * Returns:
+ *   Безопасный URL или null.
+ */
+function normalizeHttpUrl(raw) {
+  const value = String(raw || '').trim();
+  if (!value) {
+    return null;
+  }
+  let candidate = value;
+  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(candidate)) {
+    candidate = `https://${candidate}`;
+  }
+  let parsed;
+  try {
+    parsed = new URL(candidate);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return null;
+  }
+  return parsed.href;
+}
+
+/**
+ * Оставляет у <a> только безопасный href и rel/target.
+ *
+ * Args:
+ *   el: элемент A.
+ */
+function sanitizeAnchor(el) {
+  const href = normalizeHttpUrl(el.getAttribute('href'));
+  stripAttributes(el);
+  if (!href) {
+    unwrap(el);
+    return;
+  }
+  el.setAttribute('href', href);
+  el.setAttribute('rel', 'noopener noreferrer');
+  el.setAttribute('target', '_blank');
+}
+
+/**
+ * Оставляет у span только class="spoiler".
+ *
+ * Args:
+ *   el: элемент SPAN.
+ */
+function sanitizeSpoilerSpan(el) {
+  const className = (el.getAttribute('class') || '')
+    .split(/\s+/)
+    .filter(Boolean);
+  stripAttributes(el);
+  if (!className.includes('spoiler')) {
+    unwrap(el);
+    return;
+  }
+  el.setAttribute('class', 'spoiler');
+}
+
+/**
+ * Очищает HTML до allowlist-тегов.
+ *
+ * Args:
+ *   html: исходный HTML.
+ *
+ * Returns:
+ *   Очищенный HTML.
  */
 export function sanitizeRichHtml(html) {
   const template = document.createElement('template');
@@ -74,6 +152,16 @@ export function sanitizeRichHtml(html) {
         unwrap(child);
         return;
       }
+      if (child.tagName === 'A') {
+        walk(child);
+        sanitizeAnchor(child);
+        return;
+      }
+      if (child.tagName === 'SPAN') {
+        walk(child);
+        sanitizeSpoilerSpan(child);
+        return;
+      }
       stripAttributes(child);
       if (child.tagName === 'BR') {
         while (child.firstChild) {
@@ -95,7 +183,12 @@ export function sanitizeRichHtml(html) {
 
 /**
  * Безопасный HTML для отображения сообщения.
- * Plain text с переносами тоже корректно рендерится.
+ *
+ * Args:
+ *   raw: сырой body.
+ *
+ * Returns:
+ *   HTML для вставки в DOM.
  */
 export function renderFormattedBody(raw) {
   const value = String(raw ?? '');
@@ -140,21 +233,18 @@ export function setEditorHtml(editor, html) {
   editor.innerHTML = sanitizeRichHtml(value);
 }
 
+/**
+ * Совместимость: floating-тулбар убран, выделение сбрасывается.
+ */
 export function hideRichToolbar() {
-  if (hideTimer) {
-    clearTimeout(hideTimer);
-    hideTimer = null;
-  }
-  if (!toolbarEl) {
+  const selection = window.getSelection();
+  if (selection && !selection.isCollapsed) {
     return;
   }
-  toolbarEl.classList.remove('is-visible');
-  toolbarEl.setAttribute('aria-hidden', 'true');
 }
 
 export function clearEditor(editor) {
   if (!editor) {
-    hideRichToolbar();
     return;
   }
   editor.innerHTML = '';
@@ -162,44 +252,6 @@ export function clearEditor(editor) {
   if (selection) {
     selection.removeAllRanges();
   }
-  hideRichToolbar();
-}
-
-function showToolbar() {
-  const bar = ensureToolbar();
-  bar.classList.add('is-visible');
-  bar.setAttribute('aria-hidden', 'false');
-}
-
-function ensureToolbar() {
-  if (toolbarEl) {
-    return toolbarEl;
-  }
-  toolbarEl = document.createElement('div');
-  toolbarEl.className = 'rich-toolbar';
-  toolbarEl.setAttribute('aria-hidden', 'true');
-  toolbarEl.innerHTML = `
-    <button type="button" class="rich-toolbar__btn" data-format="bold" title="Жирный"><b>B</b></button>
-    <button type="button" class="rich-toolbar__btn" data-format="italic" title="Курсив"><i>I</i></button>
-    <button type="button" class="rich-toolbar__btn" data-format="underline" title="Подчёркнутый"><u>U</u></button>
-    <button type="button" class="rich-toolbar__btn" data-format="strikeThrough" title="Зачёркнутый"><s>S</s></button>
-  `;
-  document.body.appendChild(toolbarEl);
-  toolbarEl.addEventListener('mousedown', (event) => {
-    event.preventDefault();
-  });
-  toolbarEl.addEventListener('click', (event) => {
-    const btn = event.target.closest('[data-format]');
-    if (!btn || !activeEditor) {
-      return;
-    }
-    const command = btn.dataset.format;
-    activeEditor.focus();
-    document.execCommand(command, false, null);
-    updateToolbarState();
-    syncToolbarToSelection();
-  });
-  return toolbarEl;
 }
 
 function elementFromNode(node) {
@@ -225,79 +277,130 @@ function selectionInsideEditor(editor) {
   return Boolean(element && editor.contains(element));
 }
 
-function updateToolbarState() {
-  const bar = ensureToolbar();
-  bar.querySelectorAll('[data-format]').forEach((btn) => {
-    const active = document.queryCommandState(
-      btn.dataset.format,
-    );
+function updateToolbarState(toolbar, editor) {
+  if (!toolbar) {
+    return;
+  }
+  toolbar.querySelectorAll('[data-format]').forEach((btn) => {
+    const format = btn.dataset.format;
+    let active = false;
+    if (FORMAT_COMMANDS.has(format) && editor) {
+      active = document.queryCommandState(format);
+    }
+    if (format === 'spoiler' && editor) {
+      active = Boolean(closestSpoiler(editor));
+    }
+    if (format === 'createLink' && editor) {
+      active = Boolean(closestAnchor(editor));
+    }
     btn.classList.toggle('is-active', active);
   });
 }
 
-function syncToolbarToSelection() {
+function closestSpoiler(editor) {
   const selection = window.getSelection();
-  if (
-    !activeEditor
-    || !selection
-    || selection.isCollapsed
-    || selection.rangeCount === 0
-    || !selectionInsideEditor(activeEditor)
-  ) {
-    hideRichToolbar();
+  if (!selection || !selection.rangeCount) {
+    return null;
+  }
+  const el = elementFromNode(selection.anchorNode);
+  if (!el || !editor.contains(el)) {
+    return null;
+  }
+  return el.closest('span.spoiler');
+}
+
+function closestAnchor(editor) {
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount) {
+    return null;
+  }
+  const el = elementFromNode(selection.anchorNode);
+  if (!el || !editor.contains(el)) {
+    return null;
+  }
+  return el.closest('a');
+}
+
+function wrapSelectionWithSpoiler(editor) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    return;
+  }
+  const existing = closestSpoiler(editor);
+  if (existing) {
+    unwrap(existing);
+    return;
+  }
+  if (selection.isCollapsed) {
     return;
   }
   const range = selection.getRangeAt(0);
-  const rect = range.getBoundingClientRect();
-  if (!rect || (rect.width === 0 && rect.height === 0)) {
-    hideRichToolbar();
-    return;
+  const spoiler = document.createElement('span');
+  spoiler.className = 'spoiler';
+  try {
+    range.surroundContents(spoiler);
+  } catch {
+    const fragment = range.extractContents();
+    spoiler.appendChild(fragment);
+    range.insertNode(spoiler);
   }
-  if (hideTimer) {
-    clearTimeout(hideTimer);
-    hideTimer = null;
-  }
-  showToolbar();
-  const bar = ensureToolbar();
-  const barRect = bar.getBoundingClientRect();
-  let top = window.scrollY + rect.top - barRect.height - 8;
-  let left =
-    window.scrollX
-    + rect.left
-    + rect.width / 2
-    - barRect.width / 2;
-  if (top < window.scrollY + 8) {
-    top = window.scrollY + rect.bottom + 8;
-  }
-  left = Math.max(
-    8,
-    Math.min(
-      left,
-      window.scrollX + window.innerWidth - barRect.width - 8,
-    ),
-  );
-  bar.style.top = `${top}px`;
-  bar.style.left = `${left}px`;
-  updateToolbarState();
+  selection.removeAllRanges();
+  const next = document.createRange();
+  next.selectNodeContents(spoiler);
+  selection.addRange(next);
 }
 
-function handleSelectionChange() {
+function applyLink(editor) {
   const selection = window.getSelection();
-  if (
-    !selection
-    || selection.isCollapsed
-    || selection.rangeCount === 0
-  ) {
-    hideRichToolbar();
+  if (!selection || !selectionInsideEditor(editor)) {
     return;
   }
-  const editor = editorFromNode(selection.anchorNode);
-  if (!editor) {
-    hideRichToolbar();
+  const existing = closestAnchor(editor);
+  const currentHref = existing?.getAttribute('href') || '';
+  const raw = window.prompt(
+    'Адрес ссылки',
+    currentHref || 'https://',
+  );
+  if (raw === null) {
     return;
   }
-  activeEditor = editor;
-  syncToolbarToSelection();
+  const href = normalizeHttpUrl(raw);
+  if (!href) {
+    window.alert('Укажите корректный http(s) адрес');
+    return;
+  }
+  if (existing) {
+    existing.setAttribute('href', href);
+    existing.setAttribute('rel', 'noopener noreferrer');
+    existing.setAttribute('target', '_blank');
+    return;
+  }
+  if (selection.isCollapsed) {
+    const anchor = document.createElement('a');
+    anchor.href = href;
+    anchor.rel = 'noopener noreferrer';
+    anchor.target = '_blank';
+    anchor.textContent = href;
+    const range = selection.getRangeAt(0);
+    range.insertNode(anchor);
+    selection.removeAllRanges();
+    const next = document.createRange();
+    next.setStartAfter(anchor);
+    next.collapse(true);
+    selection.addRange(next);
+    return;
+  }
+  document.execCommand('createLink', false, href);
+  editor.querySelectorAll('a').forEach((anchor) => {
+    const safe = normalizeHttpUrl(anchor.getAttribute('href'));
+    if (!safe) {
+      unwrap(anchor);
+      return;
+    }
+    anchor.setAttribute('href', safe);
+    anchor.setAttribute('rel', 'noopener noreferrer');
+    anchor.setAttribute('target', '_blank');
+  });
 }
 
 function handlePaste(event) {
@@ -315,8 +418,47 @@ function handlePaste(event) {
   document.execCommand('insertHTML', false, html || '');
 }
 
+function toolbarMarkup() {
+  const btn = (format, tip, label, extraClass = '') => {
+    const cls = extraClass
+      ? `rich-toolbar__btn ${extraClass}`
+      : 'rich-toolbar__btn';
+    return `<button
+      type="button"
+      class="${cls}"
+      data-format="${format}"
+      data-tip="${escapeHtml(tip)}"
+      aria-label="${escapeHtml(tip)}"
+    >${label}</button>`;
+  };
+  return `<div class="rich-toolbar" role="toolbar" aria-label="Форматирование">
+    ${btn('bold', 'Жирный', '<b>B</b>')}
+    ${btn('italic', 'Курсив', '<i>I</i>')}
+    ${btn('underline', 'Подчёркнутый', '<u>U</u>')}
+    ${btn('strikeThrough', 'Зачёркнутый', '<s>S</s>')}
+    ${btn(
+      'spoiler',
+      'Скрыть текст под спойлером',
+      'Спойлер',
+      'rich-toolbar__btn--label',
+    )}
+    ${btn(
+      'createLink',
+      'Вставить ссылку',
+      'Ссылка',
+      'rich-toolbar__btn--label',
+    )}
+  </div>`;
+}
+
 /**
  * Разметка редактора для вставки в шаблоны.
+ *
+ * Args:
+ *   options: name, placeholder, initialHtml, minRows.
+ *
+ * Returns:
+ *   HTML строка редактора с тулбаром.
  */
 export function richEditorMarkup({
   name = 'body',
@@ -334,6 +476,7 @@ export function richEditorMarkup({
       data-placeholder="${escapeHtml(placeholder)}"
       data-min-rows="${minRows}"
     >
+      ${toolbarMarkup()}
       <div
         class="rich-editor__surface"
         contenteditable="true"
@@ -345,8 +488,45 @@ export function richEditorMarkup({
     </div>`;
 }
 
+function bindToolbar(wrap, surface) {
+  const toolbar = wrap.querySelector('.rich-toolbar');
+  if (!toolbar || toolbar.dataset.richBound === '1') {
+    return;
+  }
+  toolbar.dataset.richBound = '1';
+  toolbar.addEventListener('mousedown', (event) => {
+    event.preventDefault();
+  });
+  toolbar.addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-format]');
+    if (!btn) {
+      return;
+    }
+    activeEditor = surface;
+    surface.focus();
+    const format = btn.dataset.format;
+    if (FORMAT_COMMANDS.has(format)) {
+      document.execCommand(format, false, null);
+    } else if (format === 'spoiler') {
+      wrapSelectionWithSpoiler(surface);
+    } else if (format === 'createLink') {
+      applyLink(surface);
+    }
+    updateToolbarState(toolbar, surface);
+    wrap.classList.toggle(
+      'is-empty',
+      isEditorEmpty(surface.innerHTML),
+    );
+  });
+}
+
+/**
+ * Инициализирует contenteditable-редакторы в контейнере.
+ *
+ * Args:
+ *   root: корень поиска редакторов.
+ */
 export function initRichTextEditor(root = document) {
-  ensureToolbar();
   root.querySelectorAll('[data-rich-editor]').forEach((wrap) => {
     if (wrap.dataset.richReady === '1') {
       return;
@@ -356,33 +536,25 @@ export function initRichTextEditor(root = document) {
       return;
     }
     wrap.dataset.richReady = '1';
+    bindToolbar(wrap, surface);
+    const toolbar = wrap.querySelector('.rich-toolbar');
     surface.addEventListener('focus', () => {
       activeEditor = surface;
+      updateToolbarState(toolbar, surface);
     });
-    surface.addEventListener('blur', () => {
-      // Небольшая задержка: клик по кнопке тулбара
-      // сначала вызывает blur, потом click.
-      if (hideTimer) {
-        clearTimeout(hideTimer);
-      }
-      hideTimer = setTimeout(() => {
-        if (document.activeElement !== surface) {
-          if (activeEditor === surface) {
-            activeEditor = null;
-          }
-          hideRichToolbar();
-        }
-      }, 120);
+    surface.addEventListener('keyup', () => {
+      updateToolbarState(toolbar, surface);
     });
-    surface.addEventListener('keyup', handleSelectionChange);
-    surface.addEventListener('mouseup', handleSelectionChange);
+    surface.addEventListener('mouseup', () => {
+      updateToolbarState(toolbar, surface);
+    });
     surface.addEventListener('paste', handlePaste);
     surface.addEventListener('input', () => {
       wrap.classList.toggle(
         'is-empty',
         isEditorEmpty(surface.innerHTML),
       );
-      handleSelectionChange();
+      updateToolbarState(toolbar, surface);
     });
     wrap.classList.toggle(
       'is-empty',
@@ -391,37 +563,70 @@ export function initRichTextEditor(root = document) {
   });
 }
 
-document.addEventListener(
-  'selectionchange',
-  handleSelectionChange,
-);
+/**
+ * Раскрывает спойлер по клику или Enter/Space.
+ *
+ * Args:
+ *   event: событие click/keydown.
+ */
+export function handleSpoilerReveal(event) {
+  const spoiler = event.target.closest('.spoiler');
+  if (!spoiler) {
+    return;
+  }
+  if (spoiler.closest('[data-rich-surface]')) {
+    return;
+  }
+  if (event.type === 'keydown') {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+  }
+  if (spoiler.classList.contains('is-revealed')) {
+    return;
+  }
+  // Не переходить по ссылке, внутри которой / которой обёрнут спойлер
+  event.preventDefault();
+  event.stopPropagation();
+  spoiler.classList.add('is-revealed');
+  spoiler.setAttribute('aria-expanded', 'true');
+}
 
-document.addEventListener('mousedown', (event) => {
-  const target = event.target;
-  if (!(target instanceof Node)) {
-    hideRichToolbar();
-    return;
-  }
-  if (toolbarEl?.contains(target)) {
-    return;
-  }
-  const surface = editorFromNode(target);
-  if (surface) {
-    activeEditor = surface;
-    return;
-  }
-  activeEditor = null;
-  hideRichToolbar();
-});
-
+document.addEventListener('click', handleSpoilerReveal, true);
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') {
-    hideRichToolbar();
+  if (event.key === 'Enter' || event.key === ' ') {
+    handleSpoilerReveal(event);
   }
-});
+}, true);
+
+/**
+ * Делает спойлеры в контейнере фокусируемыми.
+ *
+ * Args:
+ *   root: корень поиска.
+ */
+export function prepareSpoilers(root = document) {
+  root.querySelectorAll('.spoiler:not([data-spoiler-ready])')
+    .forEach((el) => {
+      el.dataset.spoilerReady = '1';
+      el.setAttribute('tabindex', '0');
+      el.setAttribute('role', 'button');
+      el.setAttribute('aria-expanded', 'false');
+      el.setAttribute(
+        'aria-label',
+        'Спойлер, нажмите чтобы открыть',
+      );
+    });
+}
 
 /**
  * Находит surface редактора внутри формы / контейнера.
+ *
+ * Args:
+ *   container: родительский элемент.
+ *
+ * Returns:
+ *   Surface или null.
  */
 export function findEditorSurface(container) {
   return container?.querySelector('[data-rich-surface]')

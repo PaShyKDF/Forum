@@ -193,6 +193,17 @@ body{font-size:16px}.container{width:min(1440px,calc(100% - 72px))}.main-nav a,.
 }
 .rich-editor {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  overflow: visible;
+}
+.rich-editor:focus-within {
+  border-color: #7aa88a;
+  box-shadow: 0 0 0 3px rgba(36, 100, 81, 0.12);
 }
 .rich-editor__surface {
   box-sizing: border-box;
@@ -202,12 +213,14 @@ body{font-size:16px}.container{width:min(1440px,calc(100% - 72px))}.main-nav a,.
   white-space: pre-wrap;
   word-break: break-word;
   outline: none;
+  border: 0;
+  border-radius: 0 0 12px 12px;
   /* Не наследовать жирный шрифт от .compose label */
   font-weight: 400;
 }
 .rich-editor__surface:focus {
-  border-color: #7aa88a;
-  box-shadow: 0 0 0 3px rgba(36, 100, 81, 0.12);
+  border-color: transparent;
+  box-shadow: none;
 }
 .rich-editor__surface:empty::before,
 .rich-editor.is-empty .rich-editor__surface::before {
@@ -225,20 +238,22 @@ body{font-size:16px}.container{width:min(1440px,calc(100% - 72px))}.main-nav a,.
   resize: none;
 }
 .rich-toolbar {
-  position: absolute;
-  z-index: 100;
-  display: none;
-  gap: 4px;
-  padding: 4px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 8px 24px rgba(24, 60, 48, 0.14);
-}
-.rich-toolbar.is-visible {
+  position: relative;
+  z-index: 3;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 12px 12px 0 0;
+  background: #f5f9f5;
+  box-shadow: none;
+  overflow: visible;
 }
 .rich-toolbar__btn {
+  position: relative;
   width: 32px;
   height: 32px;
   border: 0;
@@ -248,9 +263,40 @@ body{font-size:16px}.container{width:min(1440px,calc(100% - 72px))}.main-nav a,.
   font: inherit;
   cursor: pointer;
 }
+.rich-toolbar__btn--label {
+  width: auto;
+  min-width: 0;
+  padding: 0 10px;
+  font: 700 12px/1 Manrope, Arial, sans-serif;
+}
 .rich-toolbar__btn:hover,
 .rich-toolbar__btn.is-active {
   background: #e7f1ea;
+}
+.rich-toolbar__btn[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 6px);
+  bottom: auto;
+  transform: translateX(-50%);
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: #1f3d33;
+  color: #fff;
+  font: 600 11px/1.2 Manrope, Arial, sans-serif;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.12s ease, visibility 0.12s ease;
+  z-index: 30;
+  box-shadow: 0 4px 12px rgba(24, 60, 48, 0.18);
+}
+.rich-toolbar__btn[data-tip]:hover::after,
+.rich-toolbar__btn[data-tip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
 }
 .post__text b,
 .post__text strong,
@@ -291,6 +337,72 @@ body{font-size:16px}.container{width:min(1440px,calc(100% - 72px))}.main-nav a,.
 .rich-editor__surface strike,
 .rich-editor__surface del {
   text-decoration: line-through;
+}
+.post__text a,
+.chat-bubble__text a,
+.forum-page__description a,
+.topic-page__description a,
+.rich-editor__surface a {
+  color: #2f6b55;
+  text-decoration: underline;
+  cursor: pointer;
+  word-break: break-word;
+}
+.post__text a:hover,
+.chat-bubble__text a:hover,
+.forum-page__description a:hover,
+.topic-page__description a:hover {
+  color: #1f4d3d;
+}
+.spoiler {
+  display: inline;
+  cursor: pointer;
+}
+.spoiler:not(.is-revealed) {
+  font-size: 0;
+  line-height: 0;
+  user-select: none;
+}
+.spoiler:not(.is-revealed) * {
+  pointer-events: none;
+}
+.spoiler:not(.is-revealed)::before {
+  content: 'спойлер';
+  display: inline;
+  font: 700 13px/1.4 Manrope, Arial, sans-serif;
+  color: var(--green);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  user-select: none;
+}
+.spoiler.is-revealed {
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  cursor: text;
+  user-select: text;
+}
+.spoiler.is-revealed::before {
+  content: none;
+}
+/* В редакторе текст спойлера виден для правки */
+.rich-editor__surface .spoiler {
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: #e7f1ea;
+  box-shadow: inset 0 0 0 1px rgba(36, 100, 81, 0.22);
+  cursor: text;
+  user-select: text;
+}
+.rich-editor__surface .spoiler::before {
+  content: 'спойлер · ';
+  font: 700 11px/1.4 Manrope, Arial, sans-serif;
+  color: var(--green);
+  text-decoration: none;
 }
 .forum-page__meta {
   display: grid;

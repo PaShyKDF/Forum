@@ -199,7 +199,8 @@ class CreateCategoryRequest(BaseSchema):
         max_length=2000,
         description=(
             'Описание. Допустимы теги '
-            'b, i, u, s, strike, del, strong, em, br'
+            'b, i, u, s, strike, del, strong, em, br, '
+            'a[href], span.spoiler'
         ),
     )
     is_restricted: bool = Field(

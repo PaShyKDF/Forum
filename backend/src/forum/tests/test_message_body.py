@@ -48,7 +48,18 @@ def test_script_and_attrs_removed():
     assert cleaned == '<b>x</b>'
 
 
-def test_links_and_images_removed():
+def test_safe_http_links_kept():
+    cleaned = sanitize_message_body(
+        '<a href="https://example.com/path">link</a>',
+    )
+    assert 'href="https://example.com/path"' in cleaned
+    assert 'rel="noopener noreferrer"' in cleaned
+    assert 'target="_blank"' in cleaned
+    assert cleaned.startswith('<a ')
+    assert 'link</a>' in cleaned
+
+
+def test_javascript_and_images_removed():
     cleaned = sanitize_message_body(
         '<a href="javascript:alert(1)">link</a>'
         '<img onerror=alert(1) src=x>',
@@ -56,6 +67,28 @@ def test_links_and_images_removed():
     assert '<a' not in cleaned
     assert '<img' not in cleaned
     assert 'javascript' not in cleaned
+    assert cleaned == 'link'
+
+
+def test_spoiler_span_kept():
+    cleaned = sanitize_message_body(
+        '<span class="spoiler">секрет</span>',
+    )
+    assert cleaned == (
+        '<span class="spoiler">секрет</span>'
+    )
+
+
+def test_foreign_span_class_stripped():
+    cleaned = sanitize_message_body(
+        '<span class="evil">x</span>',
+    )
+    assert 'class=' not in cleaned
+    assert cleaned == 'x'
+    cleaned = sanitize_message_body(
+        '<span class="evil spoiler">x</span>',
+    )
+    assert cleaned == '<span class="spoiler">x</span>'
 
 
 def test_nested_allowed_tags():

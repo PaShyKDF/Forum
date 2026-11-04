@@ -110,6 +110,7 @@ class CreateDirectMessageRequest(BaseSchema):
         max_length=10000,
         description=(
             'Текст сообщения. Допустимы теги '
-            'b, i, u, s, strike, del, strong, em, br'
+            'b, i, u, s, strike, del, strong, em, br, '
+            'a[href], span.spoiler'
         ),
     )

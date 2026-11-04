@@ -115,7 +115,8 @@ class CreateTopicRequest(BaseSchema):
         max_length=20000,
         description=(
             'Текст первого сообщения. Допустимы теги '
-            'b, i, u, s, strike, del, strong, em, br'
+            'b, i, u, s, strike, del, strong, em, br, '
+            'a[href], span.spoiler'
         ),
     )
     description: str | None = Field(

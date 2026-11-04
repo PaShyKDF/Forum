@@ -30,6 +30,7 @@ import {
   hideRichToolbar,
   initRichTextEditor,
   isEditorEmpty,
+  prepareSpoilers,
   renderFormattedBody,
 } from './ui/rich-text.js';
 
@@ -502,6 +503,7 @@ function renderRoots(pageData) {
       .join('') ||
     '<p class="replies__empty">Пока нет сообщений. Будьте первым!</p>';
   initRichTextEditor(roots);
+  prepareSpoilers(roots);
   if (paginationHost) {
     paginationHost.innerHTML = paginationTemplate({
       page: pageData.page,
@@ -640,6 +642,7 @@ async function loadReplies(postEl, page = 1) {
       { depth: depth + 1 },
     );
     initRichTextEditor(container);
+    prepareSpoilers(container);
     const toggle = postEl.querySelector(
       '[data-action="toggle-replies"]',
     );
@@ -2233,6 +2236,7 @@ function bindChatBubbleNode(node, message) {
   const time = node.querySelector('.chat-bubble__time');
   if (text) {
     text.innerHTML = renderFormattedBody(message.body);
+    prepareSpoilers(text);
   }
   if (time) {
     time.textContent = message.time || '';
@@ -2488,6 +2492,7 @@ async function render() {
     }
     app.innerHTML = page;
     initRichTextEditor(app);
+    prepareSpoilers(app);
     if (chatMatch) {
       const container = document.querySelector(
         '[data-chat-messages]',

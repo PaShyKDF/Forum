@@ -18,7 +18,8 @@ class CreatePostRequest(BaseSchema):
         max_length=20000,
         description=(
             'Текст сообщения. Допустимы теги '
-            'b, i, u, s, strike, del, strong, em, br'
+            'b, i, u, s, strike, del, strong, em, br, '
+            'a[href], span.spoiler'
         ),
     )
     quoted_post_id: int | None = Field(
@@ -36,7 +37,8 @@ class UpdatePostRequest(BaseSchema):
         max_length=20000,
         description=(
             'Новый текст. Допустимы теги '
-            'b, i, u, s, strike, del, strong, em, br'
+            'b, i, u, s, strike, del, strong, em, br, '
+            'a[href], span.spoiler'
         ),
     )
     quoted_post_id: int | None = Field(
