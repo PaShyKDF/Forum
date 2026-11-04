@@ -1,3 +1,8 @@
+import {
+  getEmojiPanelCategories,
+  pushRecentEmoji,
+} from './emoji-data.js';
+
 const ALLOWED_TAGS = new Set([
   'B',
   'STRONG',
@@ -448,7 +453,54 @@ function toolbarMarkup() {
       'Ссылка',
       'rich-toolbar__btn--label',
     )}
+    <button
+      type="button"
+      class="rich-toolbar__btn rich-toolbar__btn--label rich-toolbar__btn--emoji"
+      data-action="toggle-emoji-panel"
+      data-tip="Смайлики"
+      aria-label="Смайлики"
+      aria-expanded="false"
+    >Смайлики</button>
   </div>`;
+}
+
+function emojiPanelMarkup() {
+  const categories = getEmojiPanelCategories();
+  const activeId = categories[0]?.id || 'recent';
+  const tabs = categories.map((category) => {
+    const isActive = category.id === activeId;
+    return `<button
+      type="button"
+      class="emoji-panel__tab${isActive ? ' is-active' : ''}"
+      data-emoji-category="${escapeHtml(category.id)}"
+      title="${escapeHtml(category.title)}"
+      aria-label="${escapeHtml(category.title)}"
+    >${category.icon}</button>`;
+  }).join('');
+  const active = categories.find((item) => item.id === activeId)
+    || categories[0];
+  const grid = (active?.items || []).map((emoji) => (
+    `<button
+      type="button"
+      class="emoji-panel__item"
+      data-emoji="${escapeHtml(emoji)}"
+      aria-label="${escapeHtml(emoji)}"
+    >${emoji}</button>`
+  )).join('');
+  return `<aside
+      class="emoji-panel"
+      data-emoji-panel
+      aria-label="Смайлики"
+    >
+      <div class="emoji-panel__tabs" role="tablist">
+        ${tabs}
+      </div>
+      <div
+        class="emoji-panel__grid"
+        data-emoji-grid
+        data-active-category="${escapeHtml(activeId)}"
+      >${grid}</div>
+    </aside>`;
 }
 
 /**
@@ -458,7 +510,7 @@ function toolbarMarkup() {
  *   options: name, placeholder, initialHtml, minRows.
  *
  * Returns:
- *   HTML строка редактора с тулбаром.
+ *   HTML строка редактора с тулбаром и панелью смайликов.
  */
 export function richEditorMarkup({
   name = 'body',
@@ -469,23 +521,174 @@ export function richEditorMarkup({
   const safe = initialHtml
     ? renderFormattedBody(initialHtml)
     : '';
-  return `<div
-      class="rich-editor"
-      data-rich-editor
-      data-name="${escapeHtml(name)}"
-      data-placeholder="${escapeHtml(placeholder)}"
-      data-min-rows="${minRows}"
-    >
-      ${toolbarMarkup()}
+  return `<div class="rich-composer" data-rich-composer>
       <div
-        class="rich-editor__surface"
-        contenteditable="true"
-        role="textbox"
-        aria-multiline="true"
-        data-rich-surface
+        class="rich-editor"
+        data-rich-editor
+        data-name="${escapeHtml(name)}"
         data-placeholder="${escapeHtml(placeholder)}"
-      >${safe}</div>
+        data-min-rows="${minRows}"
+      >
+        ${toolbarMarkup()}
+        <div
+          class="rich-editor__surface"
+          contenteditable="true"
+          role="textbox"
+          aria-multiline="true"
+          data-rich-surface
+          data-placeholder="${escapeHtml(placeholder)}"
+        >${safe}</div>
+      </div>
+      ${emojiPanelMarkup()}
     </div>`;
+}
+
+function renderEmojiGrid(grid, categoryId) {
+  if (!grid) {
+    return;
+  }
+  const categories = getEmojiPanelCategories();
+  const category = categories.find((item) => item.id === categoryId)
+    || categories[0];
+  const items = category?.items || [];
+  grid.dataset.activeCategory = category?.id || 'recent';
+  grid.innerHTML = items.map((emoji) => (
+    `<button
+      type="button"
+      class="emoji-panel__item"
+      data-emoji="${escapeHtml(emoji)}"
+      aria-label="${escapeHtml(emoji)}"
+    >${emoji}</button>`
+  )).join('');
+}
+
+function setEmojiPanelOpen(composer, open) {
+  if (!composer) {
+    return;
+  }
+  composer.classList.toggle('is-emoji-open', open);
+  const toggle = composer.querySelector(
+    '[data-action="toggle-emoji-panel"]',
+  );
+  if (toggle) {
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+}
+
+function insertEmojiAtSelection(surface, emoji) {
+  if (!surface || !emoji) {
+    return;
+  }
+  surface.focus();
+  const inserted = document.execCommand(
+    'insertText',
+    false,
+    emoji,
+  );
+  if (!inserted) {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      const node = document.createTextNode(emoji);
+      range.insertNode(node);
+      range.setStartAfter(node);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } else {
+      surface.appendChild(document.createTextNode(emoji));
+    }
+  }
+  pushRecentEmoji(emoji);
+}
+
+function bindEmojiPanel(composer, surface) {
+  const panel = composer.querySelector('[data-emoji-panel]');
+  if (!panel || panel.dataset.emojiBound === '1') {
+    return;
+  }
+  panel.dataset.emojiBound = '1';
+  const grid = panel.querySelector('[data-emoji-grid]');
+  const tabs = panel.querySelector('.emoji-panel__tabs');
+
+  panel.addEventListener('mousedown', (event) => {
+    event.preventDefault();
+  });
+
+  tabs?.addEventListener('click', (event) => {
+    const tab = event.target.closest('[data-emoji-category]');
+    if (!tab) {
+      return;
+    }
+    const categoryId = tab.dataset.emojiCategory;
+    tabs.querySelectorAll('.emoji-panel__tab').forEach((node) => {
+      node.classList.toggle(
+        'is-active',
+        node === tab,
+      );
+    });
+    if (categoryId === 'recent') {
+      renderEmojiGrid(grid, 'recent');
+      return;
+    }
+    renderEmojiGrid(grid, categoryId);
+  });
+
+  panel.addEventListener('click', (event) => {
+    const item = event.target.closest('[data-emoji]');
+    if (!item) {
+      return;
+    }
+    activeEditor = surface;
+    insertEmojiAtSelection(surface, item.dataset.emoji);
+    const activeCategory = grid?.dataset.activeCategory;
+    if (activeCategory === 'recent') {
+      renderEmojiGrid(grid, 'recent');
+    }
+    const wrap = composer.querySelector('[data-rich-editor]');
+    wrap?.classList.toggle(
+      'is-empty',
+      isEditorEmpty(surface.innerHTML),
+    );
+  });
+
+  const toggle = composer.querySelector(
+    '[data-action="toggle-emoji-panel"]',
+  );
+  toggle?.addEventListener('mousedown', (event) => {
+    event.preventDefault();
+  });
+  toggle?.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const open = !composer.classList.contains('is-emoji-open');
+    if (open) {
+      document.querySelectorAll('[data-rich-composer].is-emoji-open')
+        .forEach((node) => {
+          if (node !== composer) {
+            setEmojiPanelOpen(node, false);
+          }
+        });
+      const recentTab = panel.querySelector(
+        '[data-emoji-category="recent"]',
+      );
+      if (recentTab) {
+        tabs?.querySelectorAll('.emoji-panel__tab')
+          .forEach((node) => {
+            node.classList.toggle(
+              'is-active',
+              node === recentTab,
+            );
+          });
+        renderEmojiGrid(grid, 'recent');
+      }
+    }
+    setEmojiPanelOpen(composer, open);
+    if (open) {
+      surface.focus();
+    }
+  });
 }
 
 function bindToolbar(wrap, surface) {
@@ -536,7 +739,12 @@ export function initRichTextEditor(root = document) {
       return;
     }
     wrap.dataset.richReady = '1';
+    const composer = wrap.closest('[data-rich-composer]')
+      || wrap.parentElement;
     bindToolbar(wrap, surface);
+    if (composer?.hasAttribute('data-rich-composer')) {
+      bindEmojiPanel(composer, surface);
+    }
     const toolbar = wrap.querySelector('.rich-toolbar');
     surface.addEventListener('focus', () => {
       activeEditor = surface;
@@ -562,6 +770,33 @@ export function initRichTextEditor(root = document) {
     );
   });
 }
+
+document.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!(target instanceof Element)) {
+    return;
+  }
+  if (target.closest('[data-emoji-panel]')) {
+    return;
+  }
+  if (target.closest('[data-action="toggle-emoji-panel"]')) {
+    return;
+  }
+  document.querySelectorAll('[data-rich-composer].is-emoji-open')
+    .forEach((composer) => {
+      setEmojiPanelOpen(composer, false);
+    });
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') {
+    return;
+  }
+  document.querySelectorAll('[data-rich-composer].is-emoji-open')
+    .forEach((composer) => {
+      setEmojiPanelOpen(composer, false);
+    });
+});
 
 /**
  * Раскрывает спойлер по клику или Enter/Space.

@@ -191,8 +191,16 @@ body{font-size:16px}.container{width:min(1440px,calc(100% - 72px))}.main-nav a,.
   resize: none;
   min-height: 0;
 }
+.rich-composer {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 208px;
+  gap: 10px;
+  align-items: stretch;
+}
 .rich-editor {
   width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -201,9 +209,109 @@ body{font-size:16px}.container{width:min(1440px,calc(100% - 72px))}.main-nav a,.
   background: #fff;
   overflow: visible;
 }
+.rich-composer:focus-within .rich-editor,
 .rich-editor:focus-within {
   border-color: #7aa88a;
   box-shadow: 0 0 0 3px rgba(36, 100, 81, 0.12);
+}
+.emoji-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  max-height: 280px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f7faf7;
+  overflow: hidden;
+}
+.emoji-panel__tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  flex: none;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2px;
+  padding: 6px;
+  border-bottom: 1px solid var(--line);
+  background: #eef5ef;
+  overflow-x: auto;
+}
+.emoji-panel__tab {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.emoji-panel__tab:hover,
+.emoji-panel__tab.is-active {
+  background: #dff0e3;
+}
+.emoji-panel__grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-content: start;
+  gap: 2px;
+  padding: 6px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.emoji-panel__item {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.emoji-panel__item:hover {
+  background: #e7f1ea;
+}
+.rich-toolbar__btn--emoji {
+  display: none;
+}
+@media (max-width: 760px) {
+  .rich-composer {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .rich-toolbar__btn--emoji {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .emoji-panel {
+    display: none;
+    height: 220px;
+    max-height: 220px;
+    margin-top: 8px;
+    order: 3;
+  }
+  .rich-composer.is-emoji-open {
+    display: flex;
+    flex-direction: column;
+  }
+  .rich-composer.is-emoji-open .emoji-panel {
+    display: flex;
+  }
+  .rich-composer.is-emoji-open .rich-editor {
+    order: 1;
+  }
 }
 .rich-editor__surface {
   box-sizing: border-box;
@@ -228,6 +336,15 @@ body{font-size:16px}.container{width:min(1440px,calc(100% - 72px))}.main-nav a,.
   color: #9aab9f;
   pointer-events: none;
 }
+.chats-composer .rich-composer {
+  flex: 1;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) 168px;
+  gap: 8px;
+}
+.chats-composer .emoji-panel {
+  max-height: 160px;
+}
 .chats-composer .rich-editor {
   flex: 1;
   min-width: 0;
@@ -236,6 +353,11 @@ body{font-size:16px}.container{width:min(1440px,calc(100% - 72px))}.main-nav a,.
   min-height: 42px;
   max-height: 160px;
   resize: none;
+}
+@media (max-width: 760px) {
+  .chats-composer .rich-composer {
+    grid-template-columns: 1fr;
+  }
 }
 .rich-toolbar {
   position: relative;
@@ -254,6 +376,9 @@ body{font-size:16px}.container{width:min(1440px,calc(100% - 72px))}.main-nav a,.
 }
 .rich-toolbar__btn {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 32px;
   height: 32px;
   border: 0;
@@ -261,11 +386,13 @@ body{font-size:16px}.container{width:min(1440px,calc(100% - 72px))}.main-nav a,.
   background: transparent;
   color: var(--forest);
   font: inherit;
+  line-height: 1;
   cursor: pointer;
 }
 .rich-toolbar__btn--label {
   width: auto;
   min-width: 0;
+  height: 32px;
   padding: 0 10px;
   font: 700 12px/1 Manrope, Arial, sans-serif;
 }
@@ -1525,7 +1652,7 @@ body{font-size:16px}.container{width:min(1440px,calc(100% - 72px))}.main-nav a,.
   align-items: end;
 }
 .chats-composer textarea,
-.chats-composer .rich-editor {
+.chats-composer .rich-composer {
   width: 100%;
   grid-column: 1;
   grid-row: 1;
