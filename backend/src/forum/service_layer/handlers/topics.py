@@ -342,12 +342,17 @@ async def handle_create_topic_command(
     if existing is not None:
         raise TopicTitleExistsError(title)
 
+    max_position = (
+        await uow.topic_repository.get_max_position(
+            command.category_id,
+        )
+    )
     topic = Topic(
         category_id=command.category_id,
         author_id=command.author_id,
         title=title,
         description=description,
-        position=0,
+        position=max_position + 1,
         is_restricted=is_restricted,
         is_closed=is_closed,
     )

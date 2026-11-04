@@ -80,6 +80,9 @@ async def test_create_closed_topic_as_admin():
     uow.topic_repository.get_by_category_and_title = (
         AsyncMock(return_value=None)
     )
+    uow.topic_repository.get_max_position = AsyncMock(
+        return_value=5,
+    )
 
     async def add_topic(entity):
         entity.id = 77
@@ -114,6 +117,10 @@ async def test_create_closed_topic_as_admin():
     assert result.id == 77
     added = uow.topic_repository.add.await_args.args[0]
     assert added.is_closed is True
+    assert added.position == 6
+    uow.topic_repository.get_max_position.assert_awaited_once_with(
+        1,
+    )
     uow.commit.assert_awaited_once()
 
 

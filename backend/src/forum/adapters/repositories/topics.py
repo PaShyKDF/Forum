@@ -168,6 +168,25 @@ class TopicRepository(SQLAlchemyRepository[Topic, int]):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_max_position(
+        self,
+        category_id: int,
+    ) -> int:
+        """
+        Максимальный position тем в категории.
+
+        Args:
+            category_id: ID категории.
+
+        Returns:
+            max(position) или -1, если тем нет.
+        """
+        stmt = select(
+            func.coalesce(func.max(Topic.position), -1),
+        ).where(Topic.category_id == category_id)
+        result = await self.session.execute(stmt)
+        return int(result.scalar_one())
+
     async def get_active_by_id(
         self,
         topic_id: int,
