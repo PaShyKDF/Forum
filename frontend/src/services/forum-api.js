@@ -400,7 +400,7 @@ export const forumApi = {
 
   async updateSection(
     sectionId,
-    { position, isTopic } = {},
+    { position, isTopic, title } = {},
   ) {
     const payload = {};
     if (position !== undefined) {
@@ -409,9 +409,19 @@ export const forumApi = {
     if (isTopic !== undefined) {
       payload.is_topic = Boolean(isTopic);
     }
+    if (title !== undefined) {
+      payload.title = title;
+    }
     return request(`/api/sections/${sectionId}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
+    });
+  },
+
+  async updateCategoryTitle(categoryId, title) {
+    return request(`/api/categories/${categoryId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ title }),
     });
   },
 

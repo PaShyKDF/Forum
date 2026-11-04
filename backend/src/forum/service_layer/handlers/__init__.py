@@ -19,6 +19,7 @@ from forum.service_layer.handlers.categories import (
     handle_get_categories_command,
     handle_get_category_by_id_command,
     handle_get_home_command,
+    handle_update_category_title_command,
 )
 from forum.service_layer.handlers.chats import (
     handle_get_chat_messages_command,
@@ -126,6 +127,9 @@ def get_command_handlers() -> dict[
         ),
         commands.CreateCategoryCommand: (
             handle_create_category_command
+        ),
+        commands.UpdateCategoryTitleCommand: (
+            handle_update_category_title_command
         ),
         commands.GetTopicsCommand: handle_get_topics_command,
         commands.GetTopicByIdCommand: (

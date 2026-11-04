@@ -17,6 +17,7 @@ from .categories import (
     GetCategoriesCommand,
     GetCategoryByIdCommand,
     GetHomeCommand,
+    UpdateCategoryTitleCommand,
 )
 from .chats import (
     GetChatMessagesCommand,
@@ -110,6 +111,7 @@ __all__ = [
     'SetTopicVisibilityCommand',
     'TrackGuestVisitCommand',
     'TrackGuestVisitResult',
+    'UpdateCategoryTitleCommand',
     'UpdatePostCommand',
     'UpdateSectionCommand',
     'UpdateTopicTitleCommand',

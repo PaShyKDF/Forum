@@ -166,6 +166,69 @@ function newCategoryFormMarkup(sectionId) {
     </form>`;
 }
 
+function titleEditIconMarkup(action) {
+  return `<button
+      type="button"
+      class="button button--icon"
+      data-action="${action}"
+      aria-label="Изменить название"
+      title="Изменить название"
+    >
+      <svg
+        class="button__icon"
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path
+          fill="currentColor"
+          d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm18-11.5a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75L21 5.75z"
+        />
+      </svg>
+    </button>`;
+}
+
+function titleEditFormMarkup({
+  formAttr,
+  label,
+  value,
+  submitAction,
+  cancelAction,
+}) {
+  return `<form
+      class="title-edit"
+      ${formAttr}
+      hidden
+    >
+      <label class="title-edit__field">
+        <span class="title-edit__label">${escapeHtml(label)}</span>
+        <input
+          class="title-edit__input"
+          type="text"
+          name="title"
+          required
+          maxlength="200"
+          value="${escapeHtml(value)}"
+        >
+      </label>
+      <div class="title-edit__actions">
+        <button
+          class="button"
+          type="button"
+          data-action="${submitAction}"
+        >Сохранить</button>
+        <button
+          class="button button--soft"
+          type="button"
+          data-action="${cancelAction}"
+        >Отмена</button>
+      </div>
+      <p class="compose__error" data-error hidden></p>
+    </form>`;
+}
+
 function sectionPositionControlsMarkup(section) {
   const transferLabel = section.isTopic
     ? 'В обычные'
@@ -280,17 +343,38 @@ function categorySectionBlock(section, { isAdmin = false } = {}) {
   const adminTools = isAdmin
     ? sectionAdminToolsMarkup(section, { showPosition: true })
     : '';
+  const editIcon = isAdmin
+    ? titleEditIconMarkup('open-edit-section-title')
+    : '';
+  const editForm = isAdmin
+    ? titleEditFormMarkup({
+        formAttr: 'data-edit-section-title-form',
+        label: 'Название раздела',
+        value: section.title,
+        submitAction: 'submit-edit-section-title',
+        cancelAction: 'cancel-edit-section-title',
+      })
+    : '';
   return `<section
     class="category-section ${section.isTopic ? 'category-section--featured' : ''}"
     data-section-block
     data-section-id="${section.id}"
   >
     <div class="category-heading">
-      <h2><a href="#/section/${section.id}">${escapeHtml(section.title)}</a></h2>
+      <h2>
+        <span class="title-with-edit">
+          <a
+            href="#/section/${section.id}"
+            data-section-title
+          >${escapeHtml(section.title)}</a>
+          ${editIcon}
+        </span>
+      </h2>
       <span class="category-heading__topics">Темы</span>
       <span class="category-heading__posts">Сообщения</span>
       <span>Последнее сообщение</span>
     </div>
+    ${editForm}
     ${adminTools}
     <div class="topic-table">${
       categories.length
@@ -500,9 +584,21 @@ export const sectionTemplate = (
   const adminTools = isAdmin
     ? sectionAdminToolsMarkup(section, { showPosition: false })
     : '';
+  const editIcon = isAdmin
+    ? titleEditIconMarkup('open-edit-section-title')
+    : '';
+  const editForm = isAdmin
+    ? titleEditFormMarkup({
+        formAttr: 'data-edit-section-title-form',
+        label: 'Название раздела',
+        value: section.title,
+        submitAction: 'submit-edit-section-title',
+        cancelAction: 'cancel-edit-section-title',
+      })
+    : '';
   return `<div class="breadcrumbs">
       <a href="#/">Форум</a><span>›</span>
-      <b>${escapeHtml(section.title)}</b>
+      <b data-section-title-crumb>${escapeHtml(section.title)}</b>
     </div>
     <section
       class="category-section standalone"
@@ -510,11 +606,17 @@ export const sectionTemplate = (
       data-section-id="${section.id}"
     >
       <div class="category-heading">
-        <h1>${escapeHtml(section.title)}</h1>
+        <h1>
+          <span class="title-with-edit">
+            <span data-section-title>${escapeHtml(section.title)}</span>
+            ${editIcon}
+          </span>
+        </h1>
         <span class="category-heading__topics">Темы</span>
         <span class="category-heading__posts">Сообщения</span>
         <span>Последнее сообщение</span>
       </div>
+      ${editForm}
       ${adminTools}
       <div class="topic-table">${
         categories.length
@@ -835,7 +937,24 @@ export const forumTemplate = (
         ${newTopicButton}
       </div>
     </div>`;
-  const titleHtml = `${escapeHtml(forum.title)} ${restrictedBadge(forum.isRestricted)}`;
+  const canRename = Boolean(forum.canManage || isAdmin);
+  const editIcon = canRename
+    ? titleEditIconMarkup('open-edit-category-title')
+    : '';
+  const editForm = canRename
+    ? titleEditFormMarkup({
+        formAttr: 'data-edit-category-title-form',
+        label: 'Название категории',
+        value: forum.title,
+        submitAction: 'submit-edit-category-title',
+        cancelAction: 'cancel-edit-category-title',
+      })
+    : '';
+  const titleHtml = `<span class="title-with-edit">
+      <span data-category-title>${escapeHtml(forum.title)}</span>
+      ${restrictedBadge(forum.isRestricted)}
+      ${editIcon}
+    </span>`;
   const aclBlock = forum.canManage
     ? accessPanelTemplate({
         entity: 'category',
@@ -843,7 +962,7 @@ export const forumTemplate = (
         isRestricted: forum.isRestricted,
       })
     : '';
-  return `<div class="breadcrumbs"><a href="#/">Форум</a><span>›</span>${sectionCrumb}<b>${escapeHtml(forum.title)}</b></div><section class="category-section standalone category-section--topics category-section--with-views" data-forum-page data-category-id="${forum.id}" data-category-restricted="${forum.isRestricted ? '1' : '0'}"><div class="category-heading"><h1>${titleHtml}</h1><span class="category-heading__topics">Темы</span><span class="category-heading__posts">Сообщения</span><span class="category-heading__views">Просмотры</span><span>Последнее сообщение</span></div>${meta}${aclBlock}${newTopicForm}<div class="topic-table">${forum.topicList.length ? forum.topicList.map(topicRow).join('') : '<p class="replies__empty">В этой категории пока нет тем</p>'}</div></section>`;
+  return `<div class="breadcrumbs"><a href="#/">Форум</a><span>›</span>${sectionCrumb}<b data-category-title-crumb>${escapeHtml(forum.title)}</b></div><section class="category-section standalone category-section--topics category-section--with-views" data-forum-page data-category-id="${forum.id}" data-category-restricted="${forum.isRestricted ? '1' : '0'}"><div class="category-heading"><h1>${titleHtml}</h1><span class="category-heading__topics">Темы</span><span class="category-heading__posts">Сообщения</span><span class="category-heading__views">Просмотры</span><span>Последнее сообщение</span></div>${editForm}${meta}${aclBlock}${newTopicForm}<div class="topic-table">${forum.topicList.length ? forum.topicList.map(topicRow).join('') : '<p class="replies__empty">В этой категории пока нет тем</p>'}</div></section>`;
 };
 
 export const profileTemplate = (profile) => {

@@ -54,6 +54,12 @@ class CreateSectionResponse(BaseSchema):
 class UpdateSectionRequest(BaseSchema):
     """Тело запроса на обновление раздела."""
 
+    title: str | None = Field(
+        None,
+        min_length=1,
+        max_length=200,
+        description='Новое название раздела',
+    )
     position: int | None = Field(
         None,
         ge=1,

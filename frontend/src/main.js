@@ -1446,6 +1446,129 @@ async function handleForumClick(event) {
     }
     return;
   }
+  if (action === 'open-edit-section-title') {
+    if (!currentUser?.is_admin) {
+      return;
+    }
+    const section = actionBtn.closest('[data-section-block]');
+    const form = section?.querySelector(
+      '[data-edit-section-title-form]',
+    );
+    const titleEl = section?.querySelector(
+      '[data-section-title]',
+    );
+    if (form) {
+      form.hidden = false;
+      section.classList.add('is-editing-title');
+      const input = form.querySelector('[name="title"]');
+      if (input) {
+        input.value = titleEl?.textContent?.trim() || '';
+        input.focus();
+        input.select();
+      }
+      showError(form, '');
+    }
+    return;
+  }
+  if (action === 'cancel-edit-section-title') {
+    const form = actionBtn.closest(
+      '[data-edit-section-title-form]',
+    );
+    const section = form?.closest('[data-section-block]');
+    if (form) {
+      form.hidden = true;
+      section?.classList.remove('is-editing-title');
+      showError(form, '');
+    }
+    return;
+  }
+  if (action === 'submit-edit-section-title') {
+    if (!currentUser?.is_admin) {
+      return;
+    }
+    const form = actionBtn.closest(
+      '[data-edit-section-title-form]',
+    );
+    const section = form?.closest('[data-section-block]');
+    const sectionId = Number(section?.dataset.sectionId);
+    const input = form?.querySelector('[name="title"]');
+    const title = input?.value?.trim() || '';
+    if (!title) {
+      showError(form, 'Введите название раздела');
+      return;
+    }
+    actionBtn.disabled = true;
+    try {
+      await forumApi.updateSection(sectionId, { title });
+      await render();
+    } catch (error) {
+      showError(form, error.message);
+    } finally {
+      actionBtn.disabled = false;
+    }
+    return;
+  }
+  if (action === 'open-edit-category-title') {
+    if (!forumPage || !currentUser?.is_admin) {
+      return;
+    }
+    const form = forumPage.querySelector(
+      '[data-edit-category-title-form]',
+    );
+    const titleEl = forumPage.querySelector(
+      '[data-category-title]',
+    );
+    if (form) {
+      form.hidden = false;
+      forumPage.classList.add('is-editing-title');
+      const input = form.querySelector('[name="title"]');
+      if (input) {
+        input.value = titleEl?.textContent?.trim() || '';
+        input.focus();
+        input.select();
+      }
+      showError(form, '');
+    }
+    return;
+  }
+  if (action === 'cancel-edit-category-title') {
+    const form = actionBtn.closest(
+      '[data-edit-category-title-form]',
+    );
+    const page = form?.closest('[data-forum-page]');
+    if (form) {
+      form.hidden = true;
+      page?.classList.remove('is-editing-title');
+      showError(form, '');
+    }
+    return;
+  }
+  if (action === 'submit-edit-category-title') {
+    if (!currentUser?.is_admin) {
+      return;
+    }
+    const form = actionBtn.closest(
+      '[data-edit-category-title-form]',
+    );
+    const page = form?.closest('[data-forum-page]');
+    const categoryId = Number(page?.dataset.categoryId);
+    const input = form?.querySelector('[name="title"]');
+    const title = input?.value?.trim() || '';
+    if (!title) {
+      showError(form, 'Введите название категории');
+      return;
+    }
+    actionBtn.disabled = true;
+    try {
+      await forumApi.updateCategoryTitle(categoryId, title);
+      await render();
+    } catch (error) {
+      showError(form, error.message);
+    } finally {
+      actionBtn.disabled = false;
+    }
+    return;
+  }
   if (action === 'toggle-category-visibility' && forumPage) {
     const categoryId = Number(forumPage.dataset.categoryId);
     const currentlyRestricted =

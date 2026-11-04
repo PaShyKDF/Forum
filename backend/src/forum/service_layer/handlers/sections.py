@@ -195,14 +195,15 @@ async def handle_update_section_command(
     uow: unit_of_work.AbstractUnitOfWork,
 ) -> SectionResponse:
     """
-    Меняет позицию или шкалу раздела (только админ).
+    Меняет название, позицию или шкалу раздела (админ).
 
     Смена is_topic: дыра в старой шкале закрывается,
     раздел встаёт в конец новой. Смена position
     внутри шкалы сдвигает соседей по правилам DHO.
 
     Args:
-        command: section_id, position, is_topic, is_admin.
+        command: section_id, title, position, is_topic,
+            is_admin.
         uow: Unit of Work текущего запроса.
 
     Returns:
@@ -211,6 +212,7 @@ async def handle_update_section_command(
     Raises:
         PermissionDeniedError: если вызывающий не админ.
         EntityNotFoundError: если раздел не найден.
+        SectionTitleExistsError: если название занято.
         DomainError: если нет полей для обновления
             или position < 1.
     """
@@ -219,9 +221,10 @@ async def handle_update_section_command(
     if (
         command.position is None
         and command.is_topic is None
+        and command.title is None
     ):
         raise DomainError(
-            'Нужно указать position или is_topic',
+            'Нужно указать title, position или is_topic',
             'EMPTY_UPDATE',
         )
 
@@ -233,6 +236,18 @@ async def handle_update_section_command(
             'Section',
             command.section_id,
         )
+
+    if command.title is not None:
+        title = _require_section_title(command.title)
+        existing = await uow.section_repository.get_by_title(
+            title,
+        )
+        if (
+            existing is not None
+            and existing.id != section.id
+        ):
+            raise SectionTitleExistsError(title)
+        section.title = title
 
     old_is_topic = bool(section.is_topic)
     old_position = int(section.position)
@@ -270,8 +285,9 @@ async def handle_update_section_command(
     await uow.commit()
 
     logger.info(
-        'Обновлён раздел %s position=%s is_topic=%s',
+        'Обновлён раздел %s title=%s position=%s is_topic=%s',
         section.id,
+        section.title,
         section.position,
         section.is_topic,
     )

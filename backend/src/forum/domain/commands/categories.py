@@ -40,3 +40,12 @@ class CreateCategoryCommand(Command):
     is_restricted: bool = False
     allowed_user_uids: list[uuid.UUID] | None = None
     is_admin: bool = False
+
+
+@dataclass
+class UpdateCategoryTitleCommand(Command):
+    """Сменить название категории (только админ)."""
+
+    category_id: int
+    title: str
+    is_admin: bool = False

@@ -10,6 +10,8 @@ from .categories import (
     LastPostResponse,
     SectionDetailResponse,
     TopicSummaryResponse,
+    UpdateCategoryTitleRequest,
+    UpdateCategoryTitleResponse,
 )
 from .chats import (
     ChatItemResponse,
@@ -105,6 +107,8 @@ __all__ = [
     'TopicNotificationsListResponse',
     'TopicSummaryResponse',
     'UnreadCountResponse',
+    'UpdateCategoryTitleRequest',
+    'UpdateCategoryTitleResponse',
     'UpdatePostRequest',
     'UpdateSectionRequest',
     'UpdateTopicTitleRequest',

@@ -13,6 +13,7 @@ from forum.domain.schemas.categories import (
     CreateCategoryResponse,
     HomeResponse,
     SectionDetailResponse,
+    UpdateCategoryTitleResponse,
 )
 from forum.service_layer import unit_of_work
 from forum.service_layer.access_control import (
@@ -340,4 +341,61 @@ async def handle_create_category_command(
         id=category.id,
         title=category.title,
         section_id=category.section_id,
+    )
+
+
+@log
+async def handle_update_category_title_command(
+    command: commands.UpdateCategoryTitleCommand,
+    uow: unit_of_work.AbstractUnitOfWork,
+) -> UpdateCategoryTitleResponse:
+    """
+    Меняет название категории (только админ).
+
+    Args:
+        command: category_id, title, is_admin.
+        uow: Unit of Work текущего запроса.
+
+    Returns:
+        UpdateCategoryTitleResponse с новым title.
+
+    Raises:
+        PermissionDeniedError: Если вызывающий не админ.
+        EntityNotFoundError: Если категория не найдена.
+        CategoryTitleExistsError: Если название занято.
+        DomainError: Если title пустой.
+    """
+    require_admin(command.is_admin)
+
+    category = await uow.category_repository.get_by_id(
+        command.category_id,
+    )
+    if category is None:
+        raise EntityNotFoundError(
+            'Category',
+            command.category_id,
+        )
+
+    title = _require_category_title(command.title)
+    existing = await uow.category_repository.get_by_title(
+        title,
+    )
+    if (
+        existing is not None
+        and existing.id != category.id
+    ):
+        raise CategoryTitleExistsError(title)
+
+    category.title = title
+    category = await uow.category_repository.update(category)
+    await uow.commit()
+
+    logger.info(
+        'Название категории %s изменено на «%s»',
+        category.id,
+        category.title,
+    )
+    return UpdateCategoryTitleResponse(
+        id=category.id,
+        title=category.title,
     )

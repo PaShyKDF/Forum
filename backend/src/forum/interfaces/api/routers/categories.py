@@ -8,6 +8,8 @@ from forum.domain.schemas import (
     CreateTopicRequest,
     CreateTopicResponse,
     HomeResponse,
+    UpdateCategoryTitleRequest,
+    UpdateCategoryTitleResponse,
 )
 from forum.domain.schemas.topics import (
     AccessMemberResponse,
@@ -177,6 +179,44 @@ async def get_category_by_id(
         is_admin=bool(
             current_user and current_user.is_admin,
         ),
+    )
+    try:
+        return await message_bus.handle(command)
+    except DomainError as error:
+        raise_http_from_domain(error)
+
+
+@router.patch(
+    '/{category_id}',
+    response_model=UpdateCategoryTitleResponse,
+    summary='Изменить название категории',
+    description='Только администратор форума.',
+)
+async def update_category_title(
+    category_id: int,
+    payload: UpdateCategoryTitleRequest,
+    current_user: UserResponse = Depends(get_forum_admin),
+    message_bus: MessageBus = Depends(get_message_bus),
+) -> UpdateCategoryTitleResponse:
+    """
+    Меняет название категории.
+
+    Args:
+        category_id: ID категории.
+        payload: новое название.
+        current_user: администратор форума.
+        message_bus: Depends MessageBus.
+
+    Returns:
+        UpdateCategoryTitleResponse с новым title.
+
+    Raises:
+        HTTPException: при доменной ошибке.
+    """
+    command = commands.UpdateCategoryTitleCommand(
+        category_id=category_id,
+        title=payload.title,
+        is_admin=True,
     )
     try:
         return await message_bus.handle(command)

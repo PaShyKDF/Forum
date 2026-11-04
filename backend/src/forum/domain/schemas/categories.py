@@ -220,3 +220,21 @@ class CreateCategoryResponse(BaseSchema):
     id: int = Field(..., description='ID новой категории')
     title: str = Field(..., description='Название')
     section_id: int = Field(..., description='ID раздела')
+
+
+class UpdateCategoryTitleRequest(BaseSchema):
+    """Тело запроса на смену названия категории."""
+
+    title: str = Field(
+        ...,
+        min_length=1,
+        max_length=200,
+        description='Новое название категории',
+    )
+
+
+class UpdateCategoryTitleResponse(BaseSchema):
+    """Ответ после смены названия категории."""
+
+    id: int = Field(..., description='ID категории')
+    title: str = Field(..., description='Новое название')

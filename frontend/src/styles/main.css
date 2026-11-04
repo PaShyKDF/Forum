@@ -406,7 +406,119 @@ body{font-size:16px}.container{width:min(1440px,calc(100% - 72px))}.main-nav a,.
   gap: 8px;
   align-items: flex-start;
 }
-.topic-page.is-editing-title .topic-page__head > div:first-child > h1,
+.button--icon {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  border-radius: 8px;
+  flex: none;
+}
+.button--icon .button__icon {
+  display: block;
+}
+/* Не наследовать стили колонок .category-heading span */
+.category-heading .title-with-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  max-width: 100%;
+  height: auto;
+  padding: 0;
+  border-left: 0;
+  flex-wrap: wrap;
+  text-align: left;
+}
+.category-heading .title-with-edit > span {
+  height: auto;
+  padding: 0;
+  border-left: 0;
+  display: inline;
+  justify-content: unset;
+}
+.category-heading .title-with-edit .acl-badge {
+  display: inline-block;
+}
+.category-heading h1,
+.category-heading h2 {
+  justify-self: start;
+  text-align: left;
+}
+@media (max-width: 760px) {
+  .category-heading .title-with-edit {
+    display: inline-flex;
+  }
+  .category-heading .title-with-edit > span {
+    display: inline;
+  }
+  .category-heading .title-with-edit .acl-badge {
+    display: inline-block;
+  }
+}
+.category-section.is-editing-title [data-action="open-edit-section-title"],
+.category-section.is-editing-title [data-action="open-edit-category-title"] {
+  display: none;
+}
+.title-edit {
+  margin: 0;
+  padding: 16px 20px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: #f5f9f5;
+}
+.title-edit[hidden] {
+  display: none;
+}
+.title-edit__field {
+  display: grid;
+  gap: 8px;
+  max-width: 640px;
+}
+.title-edit__label {
+  font-weight: 700;
+  color: var(--forest);
+  font-size: 13px;
+}
+.title-edit__input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--forest);
+  font: 600 16px/1.35 Manrope, Arial, sans-serif;
+  outline: none;
+}
+.title-edit__input:focus {
+  border-color: #7aa88a;
+  box-shadow: 0 0 0 3px rgba(36, 100, 81, 0.1);
+}
+.title-edit__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.title-edit .compose__error {
+  margin-top: 10px;
+}
+@media (max-width: 760px) {
+  .title-edit {
+    padding: 14px 18px 12px;
+  }
+  .title-edit__input {
+    font-size: 16px;
+  }
+  .button--icon {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+  }
+}
 .topic-page.is-editing-title [data-action="open-edit-title"] {
   display: none;
 }

@@ -145,9 +145,10 @@ async def get_section_by_id(
 @router.patch(
     '/{section_id}',
     response_model=SectionResponse,
-    summary='Обновить позицию или шкалу раздела',
+    summary='Обновить раздел',
     description=(
-        'Только администратор. Смена is_topic '
+        'Только администратор. Можно менять title, '
+        'position и/или is_topic. Смена is_topic '
         'ставит раздел в конец новой шкалы. '
         'Смена position сдвигает соседей.'
     ),
@@ -159,11 +160,11 @@ async def update_section(
     message_bus: MessageBus = Depends(get_message_bus),
 ) -> SectionResponse:
     """
-    Обновляет позицию или шкалу раздела (админ).
+    Обновляет название, позицию или шкалу раздела.
 
     Args:
         section_id: ID раздела.
-        payload: position и/или is_topic.
+        payload: title, position и/или is_topic.
         current_user: администратор форума.
         message_bus: Depends MessageBus.
 
@@ -175,6 +176,7 @@ async def update_section(
     """
     command = commands.UpdateSectionCommand(
         section_id=section_id,
+        title=payload.title,
         position=payload.position,
         is_topic=payload.is_topic,
         is_admin=True,

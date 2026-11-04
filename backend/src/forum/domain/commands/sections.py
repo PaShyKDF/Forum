@@ -33,9 +33,10 @@ class CreateSectionCommand(Command):
 
 @dataclass
 class UpdateSectionCommand(Command):
-    """Обновить позицию или шкалу раздела (админ)."""
+    """Обновить название, позицию или шкалу раздела (админ)."""
 
     section_id: int
+    title: str | None = None
     position: int | None = None
     is_topic: bool | None = None
     is_admin: bool = False
